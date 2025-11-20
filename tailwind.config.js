@@ -2,23 +2,29 @@
 import withMT from "@material-tailwind/react/utils/withMT";
 
 export default withMT({
-  darkMode: "class", // <-- Important
+  darkMode: "class",
+  safelist: [
+    "bg-light-bg",
+    "bg-dark-bg",
+    "text-light-text",
+    "text-dark-text"
+  ],
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        // LIGHT THEME
-        "light-bg": "#fffefbff",
+        // LIGHT
+        "light-bg": "#fffefb",
         "light-text": "#0F172A",
 
-        // DARK THEME
+        // DARK
         "dark-bg": "#0B1120",
         "dark-text": "#E2E8F0",
 
-        // Optional accent colors (same in both themes)
+        // Universal accents
         primary: "#3B82F6",
         accent: "#22C55E",
       },

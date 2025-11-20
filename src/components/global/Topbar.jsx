@@ -1,7 +1,13 @@
+// REACT MODULES
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+
+// IMPORTS
 import { toggleTheme } from "../../redux/slices/themeSlice";
-import { themeClasses } from "../../utils/themeClasses";
+import { themeClasses } from "../../utils/classes/themeClasses";
+
+// UTILITIES
 import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
@@ -9,6 +15,7 @@ import {
 
 export default function Topbar() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const theme = useSelector((state) => state.theme);
   const { user, isAuthenticated } = useSelector((state) => state.auth || {});
 
@@ -16,19 +23,19 @@ export default function Topbar() {
 
   return (
     <div
+      id="app-navbar"
       className={`
         w-full h-16 px-6 flex items-center justify-between 
         border-b shadow-sm fixed top-0 left-0 z-50
-        ${themeClasses[theme]}
+        ${themeClasses[theme].bg}
+        ${themeClasses[theme].text}
       `}
     >
-      {/* LEFT: LOGO */}
       <div className="flex items-center gap-3">
         <img src="/logo.png" alt="logo" className="h-8 w-8" />
         <span className="text-xl font-semibold">BrewQuery</span>
       </div>
 
-      {/* CENTER: SEARCH BAR */}
       <div className="hidden md:flex w-1/3 relative">
         <input
           type="text"
@@ -46,35 +53,25 @@ export default function Topbar() {
         <MagnifyingGlassIcon className="h-5 w-5 absolute right-3 top-2.5 opacity-70" />
       </div>
 
-      {/* RIGHT: BUTTONS */}
       <div className="flex items-center gap-4">
-        {/* THEME TOGGLE */}
         <button
           className="px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           onClick={() => dispatch(toggleTheme())}
         >
-          {theme === "light" ? "🌙" : "☀️"}
+          {theme === "light" ? "Dark" : "Light"}
         </button>
 
-        {/* NOT LOGGED IN */}
         {!isAuthenticated && (
           <>
-            <a
-              href="/login"
+            <button
+              onClick={() => navigate("/login")}
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
             >
               Login
-            </a>
-            <a
-              href="/signup"
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
-            >
-              Sign Up
-            </a>
+            </button>
           </>
         )}
 
-        {/* LOGGED IN → Avatar + Dropdown */}
         {isAuthenticated && (
           <div className="relative">
             <div
