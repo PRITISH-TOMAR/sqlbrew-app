@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { themeClasses } from "../../utils/classes/themeClasses";
 import { CountryCodeDropdown } from "../../utils/classes/CountryCodeDropDown";
 import { sendOtpToMail, signupUser } from "../../api/authApi";
-import {PasswordStrengthBar} from "../../utils/helpers/PasswordStrengthBar"
+import { PasswordStrengthBar } from "../../utils/helpers/PasswordStrengthBar";
 import Otp from "./OTP";
 
 // Utilites used
@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import { FaLock } from "react-icons/fa";
 import { TailSpin } from "react-loader-spinner";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 // FUNCTION : Email Validation
 const validateEmail = (email) => {
@@ -22,8 +23,6 @@ const validateEmail = (email) => {
   if (!check) toast.error(`INVALID EMAIL..`);
   return check;
 };
-
-
 
 // FUNCTION : Form Data Validation
 const validateForm = (formData) => {
@@ -62,10 +61,17 @@ export default function Signup({ onSwitchToLogin }) {
   const [showOtp, setShowOtp] = useState(false);
   const [verified, setVerified] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // FUNCTION : HANDLE CHANGES IN FORM DATA
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // FUNCTION :  TOGGLE PASSWORD EYE
+  const togglePassword = (e) => {
+    e.preventDefault();
+    setShowPassword((state) => !state);
   };
 
   // FUNCTION : ADD KEY FROM VERIFIED EMAIL TO FORM DATA
@@ -217,7 +223,7 @@ export default function Signup({ onSwitchToLogin }) {
             className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
           >
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
               value={formData.password}
@@ -225,15 +231,18 @@ export default function Signup({ onSwitchToLogin }) {
               minLength={8}
               required
             />
+            <button className="mr-6" onClick={togglePassword}>
+              {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+            </button>
           </div>
-          <PasswordStrengthBar password={formData.password}/>
+          <PasswordStrengthBar password={formData.password} />
         </div>
 
         <div
           className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
         >
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="Confirm Password"
             className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
             value={formData.confirmPassword}
