@@ -6,10 +6,11 @@ import { useSelector } from "react-redux";
 import { themeClasses } from "../../utils/classes/themeClasses";
 import { CountryCodeDropdown } from "../../utils/classes/CountryCodeDropDown";
 import { sendOtpToMail, signupUser } from "../../api/authApi";
+import {PasswordStrengthBar} from "../../utils/helpers/PasswordStrengthBar"
 import Otp from "./OTP";
-import toast from "react-hot-toast";
 
 // Utilites used
+import toast from "react-hot-toast";
 import { FaLock } from "react-icons/fa";
 import { TailSpin } from "react-loader-spinner";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +22,8 @@ const validateEmail = (email) => {
   if (!check) toast.error(`INVALID EMAIL..`);
   return check;
 };
+
+
 
 // FUNCTION : Form Data Validation
 const validateForm = (formData) => {
@@ -70,7 +73,7 @@ export default function Signup({ onSwitchToLogin }) {
     return { ...formData, emailKey };
   };
 
-  // FUNCTION : CLEAR FORM DATA 
+  // FUNCTION : CLEAR FORM DATA
   const handleClearForm = () => {
     setFormData((prev) =>
       Object.fromEntries(Object.keys(prev).map((key) => [key, ""]))
@@ -89,12 +92,11 @@ export default function Signup({ onSwitchToLogin }) {
     setOtpLoading(false);
   };
 
-  // FUNCTION: HANDLE FORM SUBMIT 
+  // FUNCTION: HANDLE FORM SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formDataToSend = addEmailKeyToFormData();
     if (!validateForm(formDataToSend)) return;
-
     const res = await signupUser(formDataToSend);
     console.log(res);
     if (res.success) {
@@ -105,7 +107,6 @@ export default function Signup({ onSwitchToLogin }) {
 
   return (
     <>
-    
       {showOtp && (
         <Otp
           setShowOtp={setShowOtp}
@@ -211,18 +212,21 @@ export default function Signup({ onSwitchToLogin }) {
             )}
           </button>
         </div>
-
-        <div
-          className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-        >
-          <input
-            type="password"
-            placeholder="Password"
-            className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-            value={formData.password}
-            onChange={(e) => handleChange("password", e.target.value)}
-            required
-          />
+        <div className="w-full flex flex-col">
+          <div
+            className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
+          >
+            <input
+              type="password"
+              placeholder="Password"
+              className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
+              value={formData.password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <PasswordStrengthBar password={formData.password}/>
         </div>
 
         <div
@@ -237,7 +241,6 @@ export default function Signup({ onSwitchToLogin }) {
             required
           />
         </div>
-
 
         <button
           type="submit"
