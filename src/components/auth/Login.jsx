@@ -8,21 +8,31 @@ import { loginUser } from "../../api/authApi";
 
 // Utlilites
 import { themeClasses } from "../../utils/classes/themeClasses";
+import { TailSpin } from "react-loader-spinner";
+import { FaEye , FaEyeSlash} from "react-icons/fa";
 
 export default function Login({ onSwitchToSignup }) {
   // INITIALIZE: HOOKS
   const theme = useSelector((state) => state.theme);
   const navigate = useNavigate();
+  const loading = useSelector((state) => state.auth.loading);
 
   // INITIALIZE: STATES
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // FUNCTION : HANDLE CHANGES IN FORM DATA
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // FUNCTION :  TOGGLE PASSWORD EYE
+  const togglePassword = (e) => {
+    e.preventDefault();
+    setShowPassword((state) => !state);
   };
 
   // FUNCTION : CLEAR FORM DATA
@@ -81,13 +91,16 @@ export default function Login({ onSwitchToSignup }) {
         className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
       >
         <input
-          type="password"
+          type= {showPassword ? "text" : "password"}
           placeholder="Password"
           className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
           value={formData.password}
           onChange={(e) => handleChange("password", e.target.value)}
           required
         />
+        <button className="mr-6" onClick={togglePassword}>
+          {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
+        </button>
       </div>
 
       <div
@@ -108,7 +121,15 @@ export default function Login({ onSwitchToSignup }) {
         type="submit"
         className={`mt-8 w-full h-11 rounded-full  hover:opacity-90 transition-opacity ${themeClasses[theme].buttonPrimary} ${themeClasses[theme].reverseBg} ${themeClasses[theme].reverseText}`}
       >
-        Login
+        {loading ? (
+          <TailSpin
+            color={themeClasses[theme].reverseText}
+            height={30}
+            width={30}
+          />
+        ) : (
+          "Login"
+        )}
       </button>
 
       <p className={`text-sm mt-4 ${themeClasses[theme].textMuted}`}>

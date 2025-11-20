@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 import { FaLock } from "react-icons/fa";
 import { TailSpin } from "react-loader-spinner";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 // FUNCTION : Email Validation
 const validateEmail = (email) => {
@@ -232,7 +232,7 @@ export default function Signup({ onSwitchToLogin }) {
               required
             />
             <button className="mr-6" onClick={togglePassword}>
-              {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+              {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
             </button>
           </div>
           <PasswordStrengthBar password={formData.password} />
