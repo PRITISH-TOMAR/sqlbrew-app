@@ -10,7 +10,7 @@ import { logout, setLoading, setUser } from '../redux/slices/authSlice';
 import toast from 'react-hot-toast';
 
 const API_BASE_URL = 'http://localhost:8080';
-
+const DEFAULT_ERROR_MESSAGE = `Can not connect to the server`
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -59,12 +59,12 @@ export const loginUser = async (payload) => {
       return ApiResponse.success(response.data.message, response.data.data);
     }
     else {
-      toast.error(response.data.message);
+      toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
       return ApiResponse.error(response.data.message, response.data.data);
     }
 
   } catch (error) {
-    toast.error(error.response.data.message);
+    toast.error(error.response?.data.message || DEFAULT_ERROR_MESSAGE);
     return ApiResponse.error(error.message);
   }
   finally {
@@ -88,7 +88,7 @@ export const signupUser = async (payload) => {
 
     }
   } catch (error) {
-    toast.error(error.response.data.message);
+    toast.error(error.response?.data.message || DEFAULT_ERROR_MESSAGE);
     return ApiResponse.error(error.message);
   }
   finally {
@@ -111,7 +111,7 @@ export const sendOtpToMail = async (payload) => {
 
     }
   } catch (error) {
-    toast.error(error.response.data.message);
+    toast.error(error.response?.data.message || DEFAULT_ERROR_MESSAGE);
     return ApiResponse.error(error.message);
   }
 };
@@ -126,12 +126,12 @@ export const verifyEmail = async (payload) => {
       return ApiResponse.success(response.data.message, response.data.data);
     }
     else {
-      toast.error(response.data.message);
+      toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
       return ApiResponse.error(response.data.message, response.data.data);
 
     }
   } catch (error) {
-    toast.error(error.response.data.message);
+    toast.error(error.response?.data.message);
     return ApiResponse.error(error.message);
   }
 };
