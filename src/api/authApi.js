@@ -1,60 +1,25 @@
 // REACT MODULES
-import axios from 'axios';
 
 // IMPORTS
 import { store } from '../redux/store';
 import { ApiResponse } from '../utils/classes/ApiResponse';
-import { logout, setLoading, setUser } from '../redux/slices/authSlice';
+import { setLoading, setUser } from '../redux/slices/authSlice';
+import api from "./globalApi"
 
 // UTILITIES
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = 'http://localhost:8080';
 const DEFAULT_ERROR_MESSAGE = `Can not connect to the server`
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
 
-// Request interceptor to add auth token from Redux store
-api.interceptors.request.use(
-  (config) => {
-    const state = store.getState();
-    const token = state.auth.authToken;
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle errors and dispatch Redux actions
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      store.dispatch(logout());
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const loginUser = async (payload) => {
   try {
     const url = `/user/login`;
     const response = await api.post(url, payload);
-    const { user, tokenDetails } = response.data.data;
-    store.dispatch(setUser({ user, tokenDetails }));
+
     if (response.status == 200) {
+      const { user, tokenDetails } = response.data.data;
+      store.dispatch(setUser({ user, tokenDetails }));
       toast.success(response.data.message);
       return ApiResponse.success(response.data.message, response.data.data);
     }
