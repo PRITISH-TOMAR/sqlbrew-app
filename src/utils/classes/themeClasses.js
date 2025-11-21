@@ -1,6 +1,6 @@
 export const themeClasses = {
   light: {
-    bg: 'bg-white',
+    bg: 'bg-gray-100',
     reverseBg: 'bg-black',
     reverseText: 'text-white',
     bgAuth:'bg-gray-100',

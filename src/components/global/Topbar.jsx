@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 // IMPORTS
 import { toggleTheme } from "../../redux/slices/themeSlice";
 import { themeClasses } from "../../utils/classes/themeClasses";
+import brewQuery from "../../assets/images/brewQuery.png";
 
 // UTILITIES
 import {
@@ -33,8 +34,13 @@ export default function Topbar() {
       `}
     >
       <div className="flex items-center gap-3">
-        <img src="/logo.png" alt="logo" className="h-8 w-8" />
-        <span className="text-xl font-semibold">BrewQuery</span>
+        <img
+          src={brewQuery}
+          alt="logo"
+          className={`h-28 w-32 transition-all duration-300 
+    ${theme === "dark" ? "invert brightness-900" : ""}
+  `}
+        />
       </div>
 
       <div className="hidden md:flex w-1/3 relative">
@@ -59,7 +65,11 @@ export default function Topbar() {
           className="px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           onClick={() => dispatch(toggleTheme())}
         >
-          {theme === "light" ? <IoMoon size={20}/> : <IoSunny color="yellow" size={20}/>}
+          {theme === "light" ? (
+            <IoMoon size={20} />
+          ) : (
+            <IoSunny color="yellow" size={20} />
+          )}
         </button>
 
         {!isAuthenticated && (

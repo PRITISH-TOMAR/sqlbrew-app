@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { PasswordStrengthBar } from "../../utils/helpers/PasswordStrengthBar";
 import { pingResetPassword, resetPassword } from "../../api/authApi";
 import { themeClasses } from "../../utils/classes/themeClasses";
+import brewQuery from "../../assets/images/brewQuery.png"
 
 // UTILITIES
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -99,7 +100,13 @@ export default function ResetPassword() {
       <div
         className={`w-full h-16 shadow-md ${themeClasses[theme].reverseText} ${themeClasses[theme].reverseBg} flex items-center px-6`}
       >
-        <div className="text-xl font-bold">BwerQuery</div>
+        <img
+          src={brewQuery}
+          alt="logo"
+          className={`h-28 w-32 transition-all duration-300 
+    ${theme === "light" ? "invert brightness-900" : ""}
+  `}
+        />
       </div>
 
       {loading && (
