@@ -242,7 +242,7 @@ export default function Signup({ onSwitchToLogin }) {
           className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
         >
           <input
-            type={showPassword ? "text" : "password"}
+            type="password"
             placeholder="Confirm Password"
             className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
             value={formData.confirmPassword}

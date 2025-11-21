@@ -31,7 +31,7 @@ export const PasswordStrengthBar = ({ password }) => {
   const strengthInfo = passWordValidationStrength(password);
 
   return (
-    <div className="flex items-center gap-2 w-[90%] ml-6">
+    <div className="flex items-center gap-2  min-w-[90%] w-[90%]">
       <div
         className="text-sm  justify-self-center self-center font-medium "
         style={{ color: strengthInfo.color }}

@@ -14,7 +14,7 @@ const DEFAULT_ERROR_MESSAGE = `Can not connect to the server`
 
 export const loginUser = async (payload) => {
   try {
-    const url = `/user/login`;
+    const url = `/auth/login`;
     const response = await api.post(url, payload);
 
     if (response.status == 200) {
@@ -40,7 +40,7 @@ export const loginUser = async (payload) => {
 export const signupUser = async (payload) => {
   try {
     store.dispatch(setLoading(true));
-    const url = `/user/register`;
+    const url = `/auth/register`;
     const response = await api.post(url, payload);
 
     if (response.status == 201) {
@@ -93,7 +93,6 @@ export const verifyEmail = async (payload) => {
     else {
       toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
       return ApiResponse.error(response.data.message, response.data.data);
-
     }
   } catch (error) {
     toast.error(error.response?.data.message);
@@ -103,32 +102,56 @@ export const verifyEmail = async (payload) => {
 
 export const forgotPassword = async (email) => {
   try {
-    const response = await api.post('/auth/forgot-password', { email });
-    return {
-      success: true,
-      message: response.data.message || 'Password reset email sent'
-    };
+    const url = `/auth/forgot-password`;
+    const response = await api.post(url, { email });
+
+    if (response.status == 200) {
+      toast.success(response.data?.message);
+      return ApiResponse.success(response.data.message);
+    }
+    else {
+      toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
+      return ApiResponse.error(response.data.message);
+    }
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || 'Failed to send reset email.',
-      error: error.response?.data
-    };
+    toast.error(error.response?.data?.data?.message);
+    return ApiResponse.error(error.message);
   }
 };
 
 export const resetPassword = async (payload) => {
   try {
-    const response = await api.post('/auth/reset-password', payload);
-    return {
-      success: true,
-      message: response.data.message || 'Password reset successful'
-    };
+    const url = `/auth/reset-password`;
+    const response = await api.post(url, payload);
+
+    if (response.status == 200) {
+      toast.success(response.data?.message);
+      return ApiResponse.success(response.data.message);
+    }
+    else {
+      toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
+      return ApiResponse.error(response.data.message);
+    }
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || 'Password reset failed.',
-      error: error.response?.data
-    };
+    toast.error(error.response?.data.message);
+    return ApiResponse.error(error.message);
+  }
+};
+
+export const pingResetPassword = async (resetKey) => {
+  try {
+    const url = `/auth/reset-ping/${resetKey}`;
+    const response = await api.get(url);
+    if (response.status == 200) {
+      return ApiResponse.success(response.data.message);
+    }
+    else {
+      toast.error(response.data.message || DEFAULT_ERROR_MESSAGE);
+      return ApiResponse.error(response.data?.message);
+    }
+  } catch (error) {
+    console.log(error);
+    toast.error(error.response?.data?.message);
+    return ApiResponse.error(error.message);
   }
 };

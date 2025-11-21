@@ -4,12 +4,21 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 // IMPORTS
-import { loginUser } from "../../api/authApi";
+import { forgotPassword, loginUser } from "../../api/authApi";
 
 // Utlilites
 import { themeClasses } from "../../utils/classes/themeClasses";
 import { TailSpin } from "react-loader-spinner";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import toast from "react-hot-toast";
+
+// FUNCTION : Email Validation
+const validateEmail = (email) => {
+  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const check = regex.test(email);
+  if (!check) toast.error(`Please enter a valid email`);
+  return check;
+};
 
 export default function Login({ onSwitchToSignup }) {
   // INITIALIZE: HOOKS
@@ -24,6 +33,7 @@ export default function Login({ onSwitchToSignup }) {
     rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   // FUNCTION : HANDLE CHANGES IN FORM DATA
   const handleChange = (field, value) => {
@@ -52,7 +62,18 @@ export default function Login({ onSwitchToSignup }) {
       navigate("/");
     }
   };
-  
+
+  // HANDLE FORGOT PASSWORD
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    const email = formData.email;
+    if (validateEmail(email)) {
+      await forgotPassword(formData.email);
+    }
+    setForgotLoading(false);
+  };
+
   return (
     <form
       className={`flex flex-col items-center justify-center `}
@@ -119,14 +140,27 @@ export default function Login({ onSwitchToSignup }) {
             Remember me
           </label>
         </div>
-        <a className="text-sm underline hover:opacity-80" href="#">
-          Forgot password?
-        </a>
+        <button
+          className="text-sm underline hover:opacity-80"
+          disabled={forgotLoading}
+          onClick={handleForgotPassword}
+        >
+          {forgotLoading ? (
+            <TailSpin
+              color={themeClasses[theme].reverseText}
+              height={30}
+              width={30}
+            />
+          ) : (
+            "Forgot password?"
+          )}
+        </button>
       </div>
 
       <button
         type="submit"
         className={`mt-8 w-full h-11 rounded-full  hover:opacity-90 transition-opacity ${themeClasses[theme].buttonPrimary} ${themeClasses[theme].reverseBg} ${themeClasses[theme].reverseText}`}
+        disabled={loading}
       >
         {loading ? (
           <TailSpin

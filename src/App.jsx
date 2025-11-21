@@ -2,8 +2,9 @@ import Sidebar from "./components/global/Sidebar";
 import Topbar from "./components/global/Topbar";
 import { useSelector } from "react-redux";
 import { themeClasses } from "./utils/classes/themeClasses";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Routing from "./Routing";
+import ResetPassword from "./components/auth/ResetPassword";
 
 export default function App() {
   const theme = useSelector((s) => s.theme);
@@ -14,9 +15,20 @@ export default function App() {
       <div
         className={`min-h-screen flex flex-col ${themeClasses[theme].bg} ${themeClasses[theme].text}`}
       >
-        <Topbar />
-        {user && <Sidebar />}
-        <Routing />
+        <Routes>
+          <Route path="/credentials/:resetKey" element={<ResetPassword />} />
+
+          <Route
+            path="*"
+            element={
+              <>
+                <Topbar />
+                {user && <Sidebar />}
+                <Routing />
+              </>
+            }
+          />
+        </Routes>
       </div>
     </BrowserRouter>
   );
