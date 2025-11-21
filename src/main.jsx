@@ -3,17 +3,18 @@ import { createRoot } from "react-dom/client";
 import "./tailwind.css";
 import App from "./App.jsx";
 import { Provider } from "react-redux";
-import { store } from "./redux/store.js";
+import { store, persistor } from "./redux/store.js";
 import { ThemeProvider } from "@material-tailwind/react";
 import CustomToaster from "./components/global/CustomToaster.jsx";
+import { PersistGate } from "redux-persist/integration/react";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
     <Provider store={store}>
-      <ThemeProvider>
-        <App />
-        <CustomToaster />
-      </ThemeProvider>
+      <PersistGate loading={null} persistor={persistor}>
+        <ThemeProvider>
+          <App />
+          <CustomToaster />
+        </ThemeProvider>
+      </PersistGate>
     </Provider>
-  </StrictMode>
 );

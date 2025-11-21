@@ -1,7 +1,5 @@
-// In your themeClasses utility
 export const themeClasses = {
   light: {
-    // ... existing properties
     bg: 'bg-white',
     reverseBg: 'bg-black',
     reverseText: 'text-white',
