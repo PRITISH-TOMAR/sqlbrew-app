@@ -12,6 +12,7 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
+import { IoSunnySharp, IoMoon, IoSunny } from "react-icons/io5";
 
 export default function Topbar() {
   const dispatch = useDispatch();
@@ -58,7 +59,7 @@ export default function Topbar() {
           className="px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           onClick={() => dispatch(toggleTheme())}
         >
-          {theme === "light" ? "Dark" : "Light"}
+          {theme === "light" ? <IoMoon size={20}/> : <IoSunny color="yellow" size={20}/>}
         </button>
 
         {!isAuthenticated && (

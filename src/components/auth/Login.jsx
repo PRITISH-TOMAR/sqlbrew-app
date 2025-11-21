@@ -9,7 +9,7 @@ import { loginUser } from "../../api/authApi";
 // Utlilites
 import { themeClasses } from "../../utils/classes/themeClasses";
 import { TailSpin } from "react-loader-spinner";
-import { FaEye , FaEyeSlash} from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Login({ onSwitchToSignup }) {
   // INITIALIZE: HOOKS
@@ -21,6 +21,7 @@ export default function Login({ onSwitchToSignup }) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -51,7 +52,7 @@ export default function Login({ onSwitchToSignup }) {
       navigate("/");
     }
   };
-
+  
   return (
     <form
       className={`flex flex-col items-center justify-center `}
@@ -91,7 +92,7 @@ export default function Login({ onSwitchToSignup }) {
         className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
       >
         <input
-          type= {showPassword ? "text" : "password"}
+          type={showPassword ? "text" : "password"}
           placeholder="Password"
           className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
           value={formData.password}
@@ -107,7 +108,13 @@ export default function Login({ onSwitchToSignup }) {
         className={`w-full flex items-center justify-between mt-8 ${themeClasses[theme].textMuted}`}
       >
         <div className="flex items-center gap-2">
-          <input className="h-5" type="checkbox" id="checkbox" />
+          <input
+            className="h-5"
+            type="checkbox"
+            id="checkbox"
+            checked={formData.rememberMe}
+            onChange={(e) => handleChange("rememberMe", e.target.checked)}
+          />
           <label className="text-sm" htmlFor="checkbox">
             Remember me
           </label>
