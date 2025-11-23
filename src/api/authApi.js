@@ -151,7 +151,8 @@ export const pingResetPassword = async (resetKey) => {
     }
   } catch (error) {
     console.log(error);
-    toast.error(error.response?.data?.message);
-    return ApiResponse.error(error.message);
+    const errMessage = error.response?.data?.message || DEFAULT_ERROR_MESSAGE;
+    toast.error(errMessage);
+    return ApiResponse.error(errMessage);
   }
 };
