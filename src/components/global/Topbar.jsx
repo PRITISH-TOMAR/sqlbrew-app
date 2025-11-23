@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 // IMPORTS
 import { toggleTheme } from "../../redux/slices/themeSlice";
 import { themeClasses } from "../../utils/classes/themeClasses";
-import brewQuery from "../../assets/images/brewQuery.png";
+import LogoImage from "./LogoImage";
 
 // UTILITIES
 import {
@@ -28,20 +28,12 @@ export default function Topbar() {
       id="app-navbar"
       className={`
         w-full h-16 px-6 flex items-center justify-between 
-        border-b shadow-sm fixed top-0 left-0 z-50
-        ${themeClasses[theme].bg}
+        border-b-2 ${themeClasses[theme].border}  shadow-sm fixed top-0 left-0 z-[9999]
+        ${themeClasses[theme].navBg}
         ${themeClasses[theme].text}
       `}
     >
-      <div className="flex items-center gap-3">
-        <img
-          src={brewQuery}
-          alt="logo"
-          className={`h-28 w-32 transition-all duration-300 
-    ${theme === "dark" ? "invert brightness-900" : ""}
-  `}
-        />
-      </div>
+      <LogoImage/>
 
       <div className="hidden md:flex w-1/3 relative">
         <input

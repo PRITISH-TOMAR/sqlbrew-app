@@ -15,6 +15,7 @@ export const themeClasses = {
     dropdownItemSelected: 'bg-blue-100',
     hover:'hover:bg-[black] hover:text-[white]',
     hoverReverse: 'hover:bg-[white] hover:text-[black]',
+    navBg : "bg-gray-50",
   
   },
   dark: {
@@ -34,6 +35,9 @@ export const themeClasses = {
     dropdownItemSelected: 'bg-gray-700',
     hover: 'hover:bg-[white] hover:text-[black]',
     hoverReverse: 'hover:bg-[black] hover:text-[white]',
+    navBg : "bg-gray-900",
     
-  }
+  },
+  
+
 };
