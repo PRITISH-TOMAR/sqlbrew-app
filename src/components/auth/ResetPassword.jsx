@@ -7,12 +7,12 @@ import { useSelector } from "react-redux";
 import { PasswordStrengthBar } from "../../utils/helpers/PasswordStrengthBar";
 import { pingResetPassword, resetPassword } from "../../api/authApi";
 import { themeClasses } from "../../utils/classes/themeClasses";
-import brewQuery from "../../assets/images/brewQuery.png"
 
 // UTILITIES
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { Spinner } from "@material-tailwind/react";
+import LogoImage from "../global/LogoImage";
 
 // FUNCTION : Form Data Validation
 const validateForm = (formData) => {
@@ -48,14 +48,15 @@ export default function ResetPassword() {
   const [valid, setValid] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // USEFFECT : TO PING ONPAGE LOAD
+  // USEFFECT : TO PING ON PAGE LOAD
   useEffect(() => {
     const pingLink = async () => {
       const res = await pingResetPassword(resetKey);
       if (res.success) {
         setValid(true);
-      } else {
-        setMessage(res.message);
+      }
+      else{
+        setValid(false);
       }
       setLoading(false);
     };
@@ -79,6 +80,8 @@ export default function ResetPassword() {
     if (res.success) {
       handleClearForm(formData);
       navigate("/login");
+    } else {
+      setMessage(res.message);
     }
   };
 
@@ -97,17 +100,7 @@ export default function ResetPassword() {
     <div
       className={`min-h-screen flex flex-col ${themeClasses[theme].bg} ${themeClasses[theme].text}`}
     >
-      <div
-        className={`w-full h-16 shadow-md ${themeClasses[theme].reverseText} ${themeClasses[theme].reverseBg} flex items-center px-6`}
-      >
-        <img
-          src={brewQuery}
-          alt="logo"
-          className={`h-28 w-32 transition-all duration-300 
-    ${theme === "light" ? "invert brightness-900" : ""}
-  `}
-        />
-      </div>
+     <LogoImage/>
 
       {loading && (
         <div className="flex flex-col items-center justify-center mt-10 text-lg">
