@@ -91,8 +91,8 @@ export default function DatabaseGrid() {
   // STATES
   const [databases, setDatabases] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const pageFromUrl = Number(searchParams.get("page")) || 1;
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const itemsPerPage = 6;
   const search = searchParams.get("search") || "";
 
