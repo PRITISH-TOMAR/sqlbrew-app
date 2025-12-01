@@ -1,16 +1,18 @@
+// REACT IMPROTS
 import React, { useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 
+// IMPORTS
 import { themeClasses } from "../../utils/classes/themeClasses";
 import useNavbarHeight from "../../hooks/useNavbarHeight";
 
+// UTILITIES
 import {
   Bars3Icon,
   ChevronDownIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-
 import {
   PresentationChartBarIcon,
   ShoppingBagIcon,
@@ -19,15 +21,16 @@ import {
   Cog6ToothIcon,
 } from "@heroicons/react/24/solid";
 
+// TODO : Make these server side render .
 const sidebarItems = [
   {
     type: "accordion",
     label: "Dashboard",
     icon: PresentationChartBarIcon,
     children: [
-      { label: "SQL", path: "/analytics" },
-      { label: "NO SQL", path: "/reporting" },
-      { label: "Vector Database", path: "/projects" },
+      { label: "SQL", path: "/sql" },
+      { label: "NO SQL", path: "/nosql" },
+      { label: "Vector Database", path: "/vector-database" },
     ],
   },
   {
@@ -35,8 +38,8 @@ const sidebarItems = [
     label: "Resources",
     icon: ShoppingBagIcon,
     children: [
-      { label: "Orders", path: "/orders" },
-      { label: "Products", path: "/products" },
+      { label: "Redis", path: "/redis" },
+      { label: "Guide", path: "/guide" },
     ],
   },
   {
@@ -54,20 +57,23 @@ const sidebarItems = [
 ];
 
 export default function Sidebar() {
+  // HOOKS
   const theme = useSelector((s) => s.theme);
   const navbarHeight = useNavbarHeight();
   const navigate = useNavigate();
   const location = useLocation();
+  const dragStartX = useRef(null);
 
+  // STATES
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [accordion, setAccordion] = useState(null);
 
-  const dragStartX = useRef(null);
-
+  // FUNCTION: HANDLE ACCORDION
   const handleAccordion = (index) => {
     setAccordion(accordion === index ? null : index);
   };
 
+  // FUNCTION: HANDLE DRAG EVENTS
   const handleDragStart = (e) => {
     dragStartX.current = e.touches[0].clientX;
   };
@@ -138,7 +144,11 @@ export default function Sidebar() {
                   <div
                     className={`
                       overflow-hidden transition-all duration-300
-                      ${accordion === index ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}
+                      ${
+                        accordion === index
+                          ? "max-h-40 opacity-100"
+                          : "max-h-0 opacity-0"
+                      }
                     `}
                   >
                     <ul className="ml-10 mt-2 flex flex-col gap-2">
@@ -149,7 +159,11 @@ export default function Sidebar() {
                           className={`
                             flex items-center gap-2 p-2 rounded-md cursor-pointer
                             transition-all duration-200 hover:bg-white/10
-                            ${location.pathname === child.path ? "bg-primary/10" : ""}
+                            ${
+                              location.pathname === child.path
+                                ? "bg-primary/10"
+                                : ""
+                            }
                           `}
                         >
                           <ChevronRightIcon className="h-3 w-3 opacity-80" />
@@ -170,7 +184,11 @@ export default function Sidebar() {
                   p-3 flex items-center gap-3 rounded-lg cursor-pointer
                   transition-all duration-200
                   hover:bg-white/10
-                  ${location.pathname === item.path ? "bg-primary/10 shadow-md" : ""}
+                  ${
+                    location.pathname === item.path
+                      ? "bg-primary/10 shadow-md"
+                      : ""
+                  }
                 `}
                 onClick={() => navigate(item.path)}
               >

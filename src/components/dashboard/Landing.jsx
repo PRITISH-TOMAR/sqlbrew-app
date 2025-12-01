@@ -2,23 +2,26 @@ import React, { useState } from "react";
 import { Zap, Users, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { useSelector } from "react-redux";
 import { themeClasses } from "../../utils/classes/themeClasses";
+import { useNavigate } from "react-router-dom";
 
 export default function Landing() {
   const theme = useSelector((s) => s.theme);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const navigate = useNavigate();
 
   const cards = [
     {
-      title: "Lightning Fast Queries",
+      title: "SQL",
       description:
         "Run blazing-fast SQL, experiment instantly, and optimize like a pro.",
       icon: Zap,
       gradient: "from-blue-500 to-cyan-400",
       image:
         "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=60",
+      link: "/sql",
     },
     {
-      title: "Team Collaboration",
+      title: "NO SQL",
       description:
         "Work with teammates, share results, and collaborate in real-time.",
       icon: Users,
@@ -27,7 +30,7 @@ export default function Landing() {
         "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=60",
     },
     {
-      title: "Secure & Reliable",
+      title: "Vector DB",
       description: "Your data stays protected with enterprise-grade security.",
       icon: Shield,
       gradient: "from-green-500 to-cyan-400",
@@ -119,7 +122,7 @@ export default function Landing() {
                   } overflow-hidden transition-all duration-500 hover:-translate-y-2 shadow-lg hover:shadow-2xl`}
                 >
                   {/* Image with overlay */}
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden ">
                     <img
                       src={card.image}
                       alt={card.title}
@@ -158,6 +161,7 @@ export default function Landing() {
 
                     <button
                       className={`flex items-center gap-2 text-sm font-semibold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent group-hover:gap-3 transition-all duration-300`}
+                      onClick={()=> navigate(card.link)}
                     >
                       Learn More
                       <ArrowRight
