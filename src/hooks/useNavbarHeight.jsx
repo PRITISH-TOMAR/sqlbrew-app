@@ -1,20 +1,3 @@
-// src/hooks/useNavbarHeight.js
-import { useEffect, useState } from "react";
-
-export default function useNavbarHeight(navbarId = "app-navbar") {
-  const [height, setHeight] = useState(0);
-
-  useEffect(() => {
-    function updateHeight() {
-      const el = document.getElementById(navbarId);
-      if (el) setHeight(el.offsetHeight);
-    }
-
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-
-    return () => window.removeEventListener("resize", updateHeight);
-  }, [navbarId]);
- 
-  return height;
-}
+// Kept for backward compatibility — layout offsets now handled by MUI theme
+import { APP_BAR_HEIGHT } from '../config/layout.js';
+export default function useNavbarHeight() { return APP_BAR_HEIGHT; }
