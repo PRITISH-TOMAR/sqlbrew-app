@@ -1,113 +1,63 @@
-// React Modules
-import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useState } from 'react';
+import {
+  Stack, TextField, Typography, Button, Link, InputAdornment,
+  IconButton, CircularProgress, Divider, Box,
+} from '@mui/material';
+import { Visibility, VisibilityOff, LockOutlined as LockIcon } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { sendOtpToMail, signupUser, loginUser } from '../../api/authApi';
+import { CountryCodeDropdown } from '../../utils/classes/CountryCodeDropDown.jsx';
+import { PasswordStrengthBar }  from '../../utils/helpers/PasswordStrengthBar.jsx';
+import Otp from './OTP.jsx';
 
-// Imports modules
-import { themeClasses } from "../../utils/classes/themeClasses";
-import { CountryCodeDropdown } from "../../utils/classes/CountryCodeDropDown";
-import { sendOtpToMail, signupUser } from "../../api/authApi";
-import { PasswordStrengthBar } from "../../utils/helpers/PasswordStrengthBar";
-import Otp from "./OTP";
-
-// Utilites used
-import toast from "react-hot-toast";
-import { FaLock } from "react-icons/fa";
-import { TailSpin } from "react-loader-spinner";
-import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-
-// FUNCTION : Email Validation
 const validateEmail = (email) => {
-  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const check = regex.test(email);
-  if (!check) toast.error(`INVALID EMAIL..`);
-  return check;
+  const ok = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+  if (!ok) toast.error('INVALID EMAIL..');
+  return ok;
 };
 
-// FUNCTION : Form Data Validation
 const validateForm = (formData) => {
-  const emptyFields = Object.entries(formData).filter(([value]) => {
-    return value === null || value === undefined || value === "";
-  });
-  if (emptyFields.length > 0) {
-    const fieldNames = emptyFields.map(([key]) => key).join(", ");
-    toast.error(`Please fill in: ${fieldNames}`);
-    return false;
-  }
-  if (formData.password != formData.confirmPassword) {
-    toast.error(`Password and Confirm password do not match`);
-    return false;
-  }
+  const empty = Object.entries(formData).filter(([, v]) => v === null || v === undefined || v === '');
+  if (empty.length) { toast.error(`Please fill in: ${empty.map(([k]) => k).join(', ')}`); return false; }
+  if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return false; }
   return true;
 };
 
 export default function Signup({ onSwitchToLogin }) {
-  // INITIALIZE: HOOKS
-  const theme = useSelector((state) => state.theme);
-  const loading = useSelector((state) => state.auth.loading);
+  const loading  = useSelector((s) => s.auth.loading);
   const navigate = useNavigate();
 
-  // INITIALIZE : STATES
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    countryCode: "+91",
-    contact: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    firstName: '', lastName: '', countryCode: '+91',
+    contact: '', email: '', password: '', confirmPassword: '',
   });
-  const [emailKey, setEmailKey] = useState({});
-  const [showOtp, setShowOtp] = useState(false);
-  const [verified, setVerified] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [emailKey,    setEmailKey]    = useState({});
+  const [showOtp,     setShowOtp]     = useState(false);
+  const [verified,    setVerified]    = useState(false);
+  const [otpLoading,  setOtpLoading]  = useState(false);
+  const [showPw,      setShowPw]      = useState(false);
 
-  // FUNCTION : HANDLE CHANGES IN FORM DATA
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const set = (field, value) => setFormData((p) => ({ ...p, [field]: value }));
 
-  // FUNCTION :  TOGGLE PASSWORD EYE
-  const togglePassword = (e) => {
-    e.preventDefault();
-    setShowPassword((state) => !state);
-  };
-
-  // FUNCTION : ADD KEY FROM VERIFIED EMAIL TO FORM DATA
-  const addEmailKeyToFormData = () => {
-    return { ...formData, emailKey };
-  };
-
-  // FUNCTION : CLEAR FORM DATA
-  const handleClearForm = () => {
-    setFormData((prev) =>
-      Object.fromEntries(Object.keys(prev).map((key) => [key, ""]))
-    );
-  };
-
-  // FUNCTION : SEND OTP TO EMAIL
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!validateEmail(formData.email)) return;
     setOtpLoading(true);
     const res = await sendOtpToMail(formData.email);
-    if (res.success) {
-      setShowOtp(true);
-    }
+    if (res.success) setShowOtp(true);
     setOtpLoading(false);
   };
 
-  // FUNCTION: HANDLE FORM SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formDataToSend = addEmailKeyToFormData();
-    if (!validateForm(formDataToSend)) return;
-    const res = await signupUser(formDataToSend);
-    console.log(res);
+    const payload = { ...formData, emailKey };
+    if (!validateForm(payload)) return;
+    const res = await signupUser(payload);
     if (res.success) {
-      handleClearForm(formDataToSend);
-      navigate("/");
+      const loginRes = await loginUser({ email: formData.email, password: formData.password, rememberMe: false });
+      if (loginRes.success) navigate('/');
     }
   };
 
@@ -122,166 +72,121 @@ export default function Signup({ onSwitchToLogin }) {
           setEmailKey={setEmailKey}
         />
       )}
-      <form
-        className=" flex flex-col items-center justify-center"
-        onSubmit={handleSubmit}
-      >
-        <h2 className={`text-4xl font-medium ${themeClasses[theme].text}`}>
-          Sign up
-        </h2>
-        <p className={`text-sm mt-3 ${themeClasses[theme].textMuted}`}>
-          Create your account to get started
-        </p>
 
-        <div className="flex gap-3 w-full mt-6">
-          <div
-            className={`flex items-center w-full bg-transparent border h-12 rounded-full overflow-hidden pl-6 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-          >
-            <input
-              type="text"
-              placeholder="First Name"
-              className={`bg-transparent placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-              value={formData.firstName}
-              onChange={(e) => handleChange("firstName", e.target.value)}
-              required
-            />
-          </div>
-          <div
-            className={`flex items-center w-full bg-transparent border h-12 rounded-full overflow-hidden pl-6 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-          >
-            <input
-              type="text"
-              placeholder="Last Name"
-              className={`bg-transparent placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-              value={formData.lastName}
-              onChange={(e) => handleChange("lastName", e.target.value)}
-              required
-            />
-          </div>
-        </div>
+      <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
+        <Box>
+          <Typography variant="h4" fontWeight={600}>Sign up</Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            Create your account to get started
+          </Typography>
+        </Box>
 
-        <div className="flex items-center w-full mt-6">
+        <Stack direction="row" spacing={1.5}>
+          <TextField label="First Name" size="small" fullWidth value={formData.firstName}
+            onChange={(e) => set('firstName', e.target.value)} required />
+          <TextField label="Last Name"  size="small" fullWidth value={formData.lastName}
+            onChange={(e) => set('lastName',  e.target.value)} required />
+        </Stack>
+
+        {/* Phone */}
+        <Stack direction="row" spacing={0}>
           <CountryCodeDropdown
             value={formData.countryCode}
-            onChange={(value) => handleChange("countryCode", value)}
-            className="w-32 "
+            onChange={(v) => set('countryCode', v)}
           />
-          <div
-            className={`flex items-center flex-1 bg-transparent border-y border-r h-12 rounded-r-full overflow-hidden pl-4 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-          >
-            <input
-              type="tel"
-              pattern="[0-9]{10}"
-              placeholder="Phone Number"
-              className={`bg-transparent placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-              value={formData.contact}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                if (value.length <= 10) {
-                  handleChange("contact", value);
-                }
-              }}
-              maxLength="10"
-              required
-            />
-          </div>
-        </div>
-
-        <div
-          className={`flex items-center w-full mt-6 bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-        >
-          <input
-            type="email"
-            placeholder="Email id"
-            className={`bg-transparent pl-6  placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-            value={formData.email}
-            onChange={(e) => handleChange("email", e.target.value)}
+          <TextField
+            label="Phone Number"
+            type="tel"
+            size="small"
+            fullWidth
+            value={formData.contact}
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, '');
+              if (v.length <= 10) set('contact', v);
+            }}
             required
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0 4px 4px 0' } }}
           />
-          <button
-            className={`relative -translate-x-5 px-3 py-1 ${
-              themeClasses[theme].reverseBg
-            } ${themeClasses[theme].reverseText} font-medium rounded-full ${
-              themeClasses[theme].hoverReverse
-            } transition-colors duration-200 shadow-sm
-            ${(verified || otpLoading) && "cursor-not-allowed"}
-            `}
-            onClick={handleSendOtp}
-            disabled={verified || otpLoading}
-          >
-            {verified ? (
-              <FaLock />
-            ) : otpLoading ? (
-              <TailSpin height={30} width={30} />
-            ) : (
-              "Verify"
-            )}
-          </button>
-        </div>
-        <div className="w-full flex flex-col">
-          <div
-            className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-          >
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-              value={formData.password}
-              onChange={(e) => handleChange("password", e.target.value)}
-              minLength={8}
-              required
-            />
-            <button className="mr-6" onClick={togglePassword}>
-              {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
-            </button>
-          </div>
+        </Stack>
+
+        {/* Email + verify */}
+        <TextField
+          label="Email"
+          type="email"
+          size="small"
+          fullWidth
+          value={formData.email}
+          onChange={(e) => set('email', e.target.value)}
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSendOtp}
+                  disabled={verified || otpLoading}
+                  sx={{ minWidth: 70, height: 28, fontSize: '0.75rem' }}
+                >
+                  {verified ? <LockIcon fontSize="small" /> : otpLoading ? <CircularProgress size={14} color="inherit" /> : 'Verify'}
+                </Button>
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {/* Password */}
+        <Box>
+          <TextField
+            label="Password"
+            type={showPw ? 'text' : 'password'}
+            size="small"
+            fullWidth
+            value={formData.password}
+            onChange={(e) => set('password', e.target.value)}
+            inputProps={{ minLength: 8 }}
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setShowPw((v) => !v)}>
+                    {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
           <PasswordStrengthBar password={formData.password} />
-        </div>
+        </Box>
 
-        <div
-          className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-        >
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-            value={formData.confirmPassword}
-            onChange={(e) => handleChange("confirmPassword", e.target.value)}
-            required
-          />
-        </div>
+        <TextField
+          label="Confirm Password"
+          type="password"
+          size="small"
+          fullWidth
+          value={formData.confirmPassword}
+          onChange={(e) => set('confirmPassword', e.target.value)}
+          required
+        />
 
-        <button
+        <Button
           type="submit"
-          className={`mt-8 w-full h-11 flex justify-center items-center rounded-full transition-all ${
-            verified
-              ? `${themeClasses[theme].reverseBg} ${themeClasses[theme].reverseText} hover:opacity-90 cursor-pointer`
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-          disabled={!verified}
+          variant="contained"
+          fullWidth
+          size="large"
+          disabled={!verified || loading}
+          sx={{ mt: 1 }}
         >
-          {loading ? (
-            <TailSpin
-              color={themeClasses[theme].reverseText}
-              height={30}
-              width={30}
-            />
-          ) : (
-            "Create Account"
-          )}
-        </button>
+          {loading ? <CircularProgress size={20} color="inherit" /> : 'Create Account'}
+        </Button>
 
-        <p className={`text-sm mt-4 ${themeClasses[theme].textMuted}`}>
-          Already have an account?{" "}
-          <button
-            type="button"
-            className={`text-blue-500  hover:underline ${themeClasses[theme].link}`}
-            onClick={onSwitchToLogin}
-          >
+        <Typography variant="body2" align="center" color="text.secondary">
+          Already have an account?{' '}
+          <Link component="button" type="button" variant="body2" onClick={onSwitchToLogin} underline="hover">
             Sign in
-          </button>
-        </p>
-      </form>
+          </Link>
+        </Typography>
+      </Stack>
     </>
   );
 }

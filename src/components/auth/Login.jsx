@@ -1,188 +1,130 @@
-// REACT MODULES
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import {
+  Stack, TextField, Typography, Button, Checkbox,
+  FormControlLabel, Link, InputAdornment, IconButton,
+  CircularProgress, Divider, Box,
+} from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { forgotPassword, loginUser } from '../../api/authApi';
 
-// IMPORTS
-import { forgotPassword, loginUser } from "../../api/authApi";
-
-// Utlilites
-import { themeClasses } from "../../utils/classes/themeClasses";
-import { TailSpin } from "react-loader-spinner";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import toast from "react-hot-toast";
-
-// FUNCTION : Email Validation
 const validateEmail = (email) => {
-  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const check = regex.test(email);
-  if (!check) toast.error(`Please enter a valid email`);
-  return check;
+  const ok = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+  if (!ok) toast.error('Please enter a valid email');
+  return ok;
 };
 
 export default function Login({ onSwitchToSignup }) {
-  // INITIALIZE: HOOKS
-  const theme = useSelector((state) => state.theme);
+  const loading  = useSelector((s) => s.auth.loading);
   const navigate = useNavigate();
-  const loading = useSelector((state) => state.auth.loading);
 
-  // INITIALIZE: STATES
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    rememberMe: false,
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
+  const [showPw,   setShowPw]   = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // FUNCTION : HANDLE CHANGES IN FORM DATA
-  const handleChange = (field, value) => {
+  const handleChange = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
 
-  // FUNCTION :  TOGGLE PASSWORD EYE
-  const togglePassword = (e) => {
-    e.preventDefault();
-    setShowPassword((state) => !state);
-  };
-
-  // FUNCTION : CLEAR FORM DATA
-  const handleClearForm = () => {
-    setFormData((prev) =>
-      Object.fromEntries(Object.keys(prev).map((key) => [key, ""]))
-    );
-  };
-
-  // FUNCTION: HANDLE FORM SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     const res = await loginUser(formData);
-    if (res.success) {
-      handleClearForm();
-      navigate("/");
-    }
+    if (res.success) navigate('/');
   };
 
-  // HANDLE FORGOT PASSWORD
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+    if (!validateEmail(formData.email)) return;
     setForgotLoading(true);
-    const email = formData.email;
-    if (validateEmail(email)) {
-      await forgotPassword(formData.email);
-    }
+    await forgotPassword(formData.email);
     setForgotLoading(false);
   };
 
   return (
-    <form
-      className={`flex flex-col items-center justify-center `}
-      onSubmit={handleSubmit}
-    >
-      <h2 className={`text-4xl font-medium ${themeClasses[theme].text} `}>
-        Sign in
-      </h2>
-      <p className={`text-sm mt-3 ${themeClasses[theme].textMuted}`}>
-        Welcome back! Please sign in to continue
-      </p>
+    <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
+      <Box>
+        <Typography variant="h4" fontWeight={600}>Sign in</Typography>
+        <Typography variant="body2" color="text.secondary" mt={0.5}>
+          Welcome back! Please sign in to continue
+        </Typography>
+      </Box>
 
-      <div className="flex items-center gap-4 w-full my-5">
-        <div className={`w-full h-px ${themeClasses[theme].border}`}></div>
-        <p
-          className={`w-full text-nowrap text-sm ${themeClasses[theme].textMuted}`}
-        >
+      <Divider>
+        <Typography variant="caption" color="text.secondary">
           sign in with email
-        </p>
-        <div className={`w-full h-px ${themeClasses[theme].border}`}></div>
-      </div>
+        </Typography>
+      </Divider>
 
-      <div
-        className={`flex items-center w-full bg-transparent border h-12 rounded-full overflow-hidden  gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-      >
-        <input
-          type="email"
-          placeholder="Email id"
-          className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-          value={formData.email}
-          onChange={(e) => handleChange("email", e.target.value)}
-          required
-        />
-      </div>
+      <TextField
+        label="Email"
+        type="email"
+        fullWidth
+        size="small"
+        value={formData.email}
+        onChange={(e) => handleChange('email', e.target.value)}
+        required
+      />
 
-      <div
-        className={`flex items-center mt-6 w-full bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].inputBg}`}
-      >
-        <input
-          type={showPassword ? "text" : "password"}
-          placeholder="Password"
-          className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].text}`}
-          value={formData.password}
-          onChange={(e) => handleChange("password", e.target.value)}
-          required
-        />
-        <button className="mr-6" onClick={togglePassword}>
-          {showPassword ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
-        </button>
-      </div>
+      <TextField
+        label="Password"
+        type={showPw ? 'text' : 'password'}
+        fullWidth
+        size="small"
+        value={formData.password}
+        onChange={(e) => handleChange('password', e.target.value)}
+        required
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton size="small" onClick={() => setShowPw((v) => !v)}>
+                {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
 
-      <div
-        className={`w-full flex items-center justify-between mt-8 ${themeClasses[theme].textMuted}`}
-      >
-        <div className="flex items-center gap-2">
-          <input
-            className="h-5"
-            type="checkbox"
-            id="checkbox"
-            checked={formData.rememberMe}
-            onChange={(e) => handleChange("rememberMe", e.target.checked)}
-          />
-          <label className="text-sm" htmlFor="checkbox">
-            Remember me
-          </label>
-        </div>
-        <button
-          className="text-sm underline hover:opacity-80"
-          disabled={forgotLoading}
-          onClick={handleForgotPassword}
-        >
-          {forgotLoading ? (
-            <TailSpin
-              color={themeClasses[theme].reverseText}
-              height={30}
-              width={30}
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={formData.rememberMe}
+              onChange={(e) => handleChange('rememberMe', e.target.checked)}
             />
-          ) : (
-            "Forgot password?"
-          )}
-        </button>
-      </div>
-
-      <button
-        type="submit"
-        className={`mt-8 w-full h-11 rounded-full  hover:opacity-90 transition-opacity ${themeClasses[theme].buttonPrimary} ${themeClasses[theme].reverseBg} ${themeClasses[theme].reverseText}`}
-        disabled={loading}
-      >
-        {loading ? (
-          <TailSpin
-            color={themeClasses[theme].reverseText}
-            height={30}
-            width={30}
-          />
-        ) : (
-          "Login"
-        )}
-      </button>
-
-      <p className={`text-sm mt-4 ${themeClasses[theme].textMuted}`}>
-        Don't have an account?{" "}
-        <button
+          }
+          label={<Typography variant="body2">Remember me</Typography>}
+        />
+        <Link
+          component="button"
           type="button"
-          className={`text-blue-500 hover:underline ${themeClasses[theme].link}`}
-          onClick={onSwitchToSignup}
+          variant="body2"
+          onClick={handleForgotPassword}
+          disabled={forgotLoading}
+          underline="hover"
         >
+          {forgotLoading ? <CircularProgress size={14} /> : 'Forgot password?'}
+        </Link>
+      </Stack>
+
+      <Button
+        type="submit"
+        variant="contained"
+        fullWidth
+        size="large"
+        disabled={loading}
+        sx={{ mt: 1 }}
+      >
+        {loading ? <CircularProgress size={20} color="inherit" /> : 'Login'}
+      </Button>
+
+      <Typography variant="body2" align="center" color="text.secondary">
+        Don't have an account?{' '}
+        <Link component="button" type="button" variant="body2" onClick={onSwitchToSignup} underline="hover">
           Sign up
-        </button>
-      </p>
-    </form>
+        </Link>
+      </Typography>
+    </Stack>
   );
 }
