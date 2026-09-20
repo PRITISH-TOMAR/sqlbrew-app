@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent Tailwind preflight from stripping MUI button/input styles */
+@layer base {
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+}
