@@ -1,212 +1,235 @@
-// REACT IMPROTS
-import React, { useState, useRef } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
-
-// IMPORTS
-import { themeClasses } from "../../utils/classes/themeClasses";
-import useNavbarHeight from "../../hooks/useNavbarHeight";
-
-// UTILITIES
 import {
-  Bars3Icon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/outline";
+  Drawer, Box, List, ListItemButton, ListItemIcon,
+  ListItemText, Tooltip, Typography, Collapse,
+  useTheme, useMediaQuery,
+} from '@mui/material';
 import {
-  PresentationChartBarIcon,
-  ShoppingBagIcon,
-  InboxIcon,
-  UserCircleIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/solid";
+  DashboardOutlined as DashboardIcon,
+  StorageOutlined as StorageIcon,
+  AccountTreeOutlined as NoSQLIcon,
+  BlurOnOutlined as VectorIcon,
+  TrendingUpOutlined as ProgressIcon,
+  EmojiEventsOutlined as ContestsIcon,
+  MenuBookOutlined as ResourcesIcon,
+  ExpandLess, ExpandMore,
+} from '@mui/icons-material';
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSidebar } from '../../context/SidebarContext.jsx';
+import { APP_BAR_HEIGHT, DRAWER_WIDTH, ICON_DRAWER_WIDTH } from '../../config/layout.js';
 
-// TODO : Make these server side render .
-const sidebarItems = [
+const NAV_ITEMS = [
   {
-    type: "accordion",
-    label: "Dashboard",
-    icon: PresentationChartBarIcon,
+    label: 'Dashboard',
+    icon: <DashboardIcon />,
+    path: '/',
     children: [
-      { label: "SQL", path: "/sql" },
-      { label: "NO SQL", path: "/nosql" },
-      { label: "Vector Database", path: "/vector-database" },
+      { label: 'SQL',             icon: <StorageIcon />, path: '/sql' },
+      { label: 'NoSQL',           icon: <NoSQLIcon />,   path: '/nosql' },
+      { label: 'Vector Database', icon: <VectorIcon />,  path: '/vector-database' },
     ],
   },
   {
-    type: "accordion",
-    label: "Resources",
-    icon: ShoppingBagIcon,
+    label: 'Resources',
+    icon: <ResourcesIcon />,
+    path: '/resources',
     children: [
-      { label: "Redis", path: "/redis" },
-      { label: "Guide", path: "/guide" },
+      { label: 'Redis', icon: <StorageIcon />,   path: '/redis' },
+      { label: 'Guide', icon: <ResourcesIcon />, path: '/guide' },
     ],
   },
-  {
-    type: "link",
-    label: "Progress",
-    icon: InboxIcon,
-    path: "/progress",
-  },
-  {
-    type: "link",
-    label: "Contests",
-    icon: Cog6ToothIcon,
-    path: "/contests",
-  },
+  { label: 'Progress', icon: <ProgressIcon />, path: '/progress' },
+  { label: 'Contests', icon: <ContestsIcon />, path: '/contests' },
 ];
 
-export default function Sidebar() {
-  // HOOKS
-  const theme = useSelector((s) => s.theme);
-  const navbarHeight = useNavbarHeight();
+function NavItem({ item, drawerOpen }) {
+  const theme    = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
-  const dragStartX = useRef(null);
+  const { pathname } = useLocation();
+  const { close }    = useSidebar();
+  const isLg = useMediaQuery(theme.breakpoints.up('lg'));
 
-  // STATES
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [accordion, setAccordion] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const hasChildren = !!item.children?.length;
 
-  // FUNCTION: HANDLE ACCORDION
-  const handleAccordion = (index) => {
-    setAccordion(accordion === index ? null : index);
-  };
+  const isSelected = hasChildren
+    ? item.children.some((c) => pathname.startsWith(c.path))
+    : item.path === '/'
+      ? pathname === '/'
+      : pathname.startsWith(item.path);
 
-  // FUNCTION: HANDLE DRAG EVENTS
-  const handleDragStart = (e) => {
-    dragStartX.current = e.touches[0].clientX;
-  };
-
-  const handleDragMove = (e) => {
-    if (!dragStartX.current) return;
-    const diff = e.touches[0].clientX - dragStartX.current;
-
-    if (diff < -50) {
-      setDrawerOpen(false);
-      dragStartX.current = null;
+  const handleClick = () => {
+    if (hasChildren) {
+      if (drawerOpen) setExpanded((v) => !v);
+    } else {
+      navigate(item.path);
+      if (!isLg) close();
     }
   };
 
+  const button = (
+    <ListItemButton
+      selected={isSelected && !hasChildren}
+      onClick={handleClick}
+      sx={{
+        minHeight: 56,
+        px: drawerOpen ? 3 : 1.5,
+        py: 1,
+        gap: 0.5,
+        mx: 0.5,
+        borderRadius: 1,
+        justifyContent: drawerOpen ? 'initial' : 'center',
+      }}
+    >
+      <ListItemIcon
+        sx={{
+          minWidth: 32,
+          justifyContent: 'center',
+          fontSize: 20,
+          color: isSelected ? 'primary.main' : 'text.primary',
+        }}
+      >
+        {item.icon}
+      </ListItemIcon>
+
+      {drawerOpen && (
+        <>
+          <ListItemText
+            primary={item.label}
+            primaryTypographyProps={{
+              variant: 'h6',
+              noWrap: true,
+              sx: { color: isSelected ? 'primary.main' : 'text.primary' },
+            }}
+          />
+          {hasChildren && (
+            expanded
+              ? <ExpandLess sx={{ fontSize: 18, color: 'text.secondary' }} />
+              : <ExpandMore  sx={{ fontSize: 18, color: 'text.secondary' }} />
+          )}
+        </>
+      )}
+    </ListItemButton>
+  );
+
   return (
     <>
-      {/* MOBILE HAMBURGER BUTTON */}
-      <button
-        onClick={() => setDrawerOpen(!drawerOpen)}
-        className={`lg:hidden fixed top-4 left-2 z-[10000] rounded
-          backdrop-blur-lg bg-white/10 shadow-xl 
-          ${themeClasses[theme].text}`}
-      >
-        <Bars3Icon className="h-6 w-6" />
-      </button>
+      {drawerOpen
+        ? button
+        : <Tooltip title={item.label} placement="right" arrow>{button}</Tooltip>}
 
-      {/* SIDEBAR */}
-      <aside
-        id="app-sidebar"
-        style={{ marginTop: navbarHeight }}
-        onTouchStart={handleDragStart}
-        onTouchMove={handleDragMove}
-        className={`fixed left-0 h-full w-64 z-[200]
-          transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)]
-          border-r backdrop-blur-xl 
-          ${drawerOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${themeClasses[theme].navBg}
-          ${themeClasses[theme].border}
-        `}
-      >
-        <ul className="p-4 flex flex-col gap-2">
-          {sidebarItems.map((item, index) => {
-            const Icon = item.icon;
-
-            // ACCORDION
-            if (item.type === "accordion") {
+      {hasChildren && drawerOpen && (
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <List disablePadding>
+            {item.children.map((child) => {
+              const childSelected = child.path === '/'
+                ? pathname === '/'
+                : pathname.startsWith(child.path);
               return (
-                <li key={item.label}>
-                  <button
-                    onClick={() => handleAccordion(index)}
-                    className={`
-                      flex items-center w-full p-3 rounded-lg 
-                      transition-all duration-200
-                      hover:bg-white/10
-                      ${accordion === index ? "bg-white/10 shadow-inner" : ""}
-                    `}
-                  >
-                    <Icon className="h-5 w-5 mr-3 opacity-90" />
-                    <span className="flex-1 font-medium">{item.label}</span>
-                    <ChevronDownIcon
-                      className={`h-4 w-4 transition-transform duration-300 ${
-                        accordion === index ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {/* Smooth Accordion */}
-                  <div
-                    className={`
-                      overflow-hidden transition-all duration-300
-                      ${
-                        accordion === index
-                          ? "max-h-40 opacity-100"
-                          : "max-h-0 opacity-0"
-                      }
-                    `}
-                  >
-                    <ul className="ml-10 mt-2 flex flex-col gap-2">
-                      {item.children.map((child) => (
-                        <li
-                          key={child.label}
-                          onClick={() => navigate(child.path)}
-                          className={`
-                            flex items-center gap-2 p-2 rounded-md cursor-pointer
-                            transition-all duration-200 hover:bg-white/10
-                            ${
-                              location.pathname === child.path
-                                ? "bg-primary/10"
-                                : ""
-                            }
-                          `}
-                        >
-                          <ChevronRightIcon className="h-3 w-3 opacity-80" />
-                          <span>{child.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
+                <ListItemButton
+                  key={child.path}
+                  selected={childSelected}
+                  onClick={() => { navigate(child.path); if (!isLg) close(); }}
+                  sx={{ minHeight: 44, pl: 6, pr: 3, py: 0.75, borderRadius: 1, mx: 0.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 28, fontSize: 16, color: childSelected ? 'primary.main' : 'inherit' }}>
+                    {child.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={child.label}
+                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                  />
+                </ListItemButton>
               );
-            }
-
-            // LINK ITEM
-            return (
-              <li
-                key={item.label}
-                className={`
-                  p-3 flex items-center gap-3 rounded-lg cursor-pointer
-                  transition-all duration-200
-                  hover:bg-white/10
-                  ${
-                    location.pathname === item.path
-                      ? "bg-primary/10 shadow-md"
-                      : ""
-                  }
-                `}
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon className="h-5 w-5 opacity-90" />
-                <span className="font-medium">{item.label}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </aside>
-
-      {/* MOBILE BACKDROP */}
-      {drawerOpen && (
-        <div
-          onClick={() => setDrawerOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[150]"
-        />
+            })}
+          </List>
+        </Collapse>
       )}
     </>
+  );
+}
+
+function DrawerContent({ open }) {
+  const theme = useTheme();
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 2 }}>
+      {/* Nav list */}
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mt: 0.5 }}>
+        <List disablePadding>
+          {NAV_ITEMS.map((item) => (
+            <NavItem key={item.label} item={item} drawerOpen={open} />
+          ))}
+        </List>
+      </Box>
+    </Box>
+  );
+}
+
+export default function Sidebar() {
+  const theme = useTheme();
+  const { open, toggle, close } = useSidebar();
+  const isLg = useMediaQuery(theme.breakpoints.up('lg'));
+
+  /* Shared paper styles — drawer is full-height (top:0), no mt */
+  const paperSx = {
+    width: open ? DRAWER_WIDTH : ICON_DRAWER_WIDTH,
+    overflowX: 'hidden',
+    border: 'none',
+    borderRight: open ? `1px solid ${theme.palette.divider}` : 'none',
+    boxShadow: open
+      ? 'none'
+      : '2px 0 8px rgba(0,0,0,0.06)',
+    top: APP_BAR_HEIGHT,
+    height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
+    transition: theme.transitions.create('width', {
+      easing:   theme.transitions.easing.sharp,
+      duration: open
+        ? theme.transitions.duration.enteringScreen
+        : theme.transitions.duration.leavingScreen,
+    }),
+  };
+
+  /* Desktop — permanent mini-drawer that participates in flex layout */
+  if (isLg) {
+    return (
+      <Drawer
+        variant="permanent"
+        open={open}
+        sx={{
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          boxSizing: 'border-box',
+          width: open ? DRAWER_WIDTH : ICON_DRAWER_WIDTH,
+          transition: theme.transitions.create('width', {
+            easing:   theme.transitions.easing.sharp,
+            duration: open
+              ? theme.transitions.duration.enteringScreen
+              : theme.transitions.duration.leavingScreen,
+          }),
+          '& .MuiDrawer-paper': paperSx,
+        }}
+      >
+        <DrawerContent open={open} />
+      </Drawer>
+    );
+  }
+
+  /* Mobile — temporary overlay */
+  return (
+    <Drawer
+      variant="temporary"
+      open={open}
+      onClose={close}
+      ModalProps={{ keepMounted: true }}
+      sx={{
+        '& .MuiDrawer-paper': {
+          ...paperSx,
+          width: DRAWER_WIDTH,
+        },
+      }}
+    >
+      <DrawerContent open />
+    </Drawer>
   );
 }
