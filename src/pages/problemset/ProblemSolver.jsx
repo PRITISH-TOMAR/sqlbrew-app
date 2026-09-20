@@ -19,6 +19,7 @@ import FileIcon from '@mui/icons-material/DataObjectRounded';
 import SchemaIcon from '@mui/icons-material/TableChartRounded';
 import ProblemIcon from '@mui/icons-material/SubjectRounded';
 import { loadProblemDetails, loadPublicTestCases, runSQLQuery, submitSQLQuery, getJobResult } from '../../api/databaseApi';
+import { SQLTestComparison } from '../../components/judge';
 
 const DIFFICULTY_COLOR = { easy: 'success', medium: 'warning', hard: 'error' };
 
@@ -308,7 +309,7 @@ function ResultsPanel({ result, running, submitting }) {
     const passed = result.verdict === 'ACCEPTED';
     return (
       <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" gap={1} mb={2}>
+        <Stack direction="row" alignItems="center" gap={1} mb={1.5}>
           {passed ? <PassIcon color="success" /> : <FailIcon color="error" />}
           <Typography variant="subtitle1" fontWeight={700} color={passed ? 'success.main' : 'error.main'}>
             {passed ? 'Accepted' : result.verdict}
@@ -321,15 +322,16 @@ function ResultsPanel({ result, running, submitting }) {
           variant="determinate"
           value={result.totalCount ? (result.passCount / result.totalCount) * 100 : 0}
           color={passed ? 'success' : 'error'}
-          sx={{ borderRadius: 1, height: 6 }}
+          sx={{ borderRadius: 1, height: 6, mb: 2 }}
         />
+        <SQLTestComparison testDetails={result.testDetails} />
       </Box>
     );
   }
 
   // Run result (RunTestcaseResponseDTO)
   const { passedCount, totalCount, totalExecutionMs, overallStatus, testDetails } = result;
-  const passed = overallStatus === 'PASSED' || overallStatus === 'ACCEPTED';
+  const passed = overallStatus === 'PASS' || overallStatus === 'PASSED' || overallStatus === 'ACCEPTED';
 
   return (
     <Box sx={{ p: 2, overflow: 'auto', height: '100%' }}>
@@ -350,45 +352,7 @@ function ResultsPanel({ result, running, submitting }) {
         )}
       </Stack>
 
-      {testDetails?.length > 0 && (
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>#</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Expected</TableCell>
-                <TableCell>Actual</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {testDetails.map((td, i) => {
-                const ok = td.status === 'PASSED' || td.passed === true;
-                return (
-                  <TableRow key={i}>
-                    <TableCell>{i + 1}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={td.status || (ok ? 'Passed' : 'Failed')}
-                        size="small"
-                        color={ok ? 'success' : 'error'}
-                        variant="outlined"
-                        sx={{ fontWeight: 600, fontSize: '0.7rem' }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {JSON.stringify(td.expected ?? td.expectedOutput ?? '—')}
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {JSON.stringify(td.actual ?? td.userOutput ?? '—')}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      <SQLTestComparison testDetails={testDetails} />
     </Box>
   );
 }
@@ -463,21 +427,21 @@ export default function ProblemSolver() {
       setSubmitting(false);
       return;
     }
-    // Poll for job result
     const jobId = res.data?.jobId;
     if (!jobId) {
       setResult(res.data);
       setSubmitting(false);
       return;
     }
+    // Poll until engine worker finishes
     const poll = async (attempts = 0) => {
-      if (attempts > 20) {
+      if (attempts > 40) {
         setResult({ error: 'Timed out waiting for result.' });
         setSubmitting(false);
         return;
       }
       const jobRes = await getJobResult(jobId);
-      if (jobRes.success && jobRes.data?.verdict) {
+      if (jobRes.success && jobRes.data?.verdict && jobRes.data.verdict !== 'PENDING') {
         setResult(jobRes.data);
         setSubmitting(false);
       } else {
