@@ -1,12 +1,5 @@
-import React from 'react'
-import Landing from '../components/dashboard/Landing'
+import Landing from '../components/dashboard/Landing.jsx';
 
-const Dashboard = () => {
-  return (
-    <div className=''>
-      <Landing/>
-    </div>
-  )
+export default function Dashboard() {
+  return <Landing />;
 }
-
-export default Dashboard

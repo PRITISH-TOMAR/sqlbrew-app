@@ -1,190 +1,230 @@
-import React, { useState } from "react";
-import { Zap, Users, Shield, ArrowRight, Sparkles } from "lucide-react";
-import { useSelector } from "react-redux";
-import { themeClasses } from "../../utils/classes/themeClasses";
-import { useNavigate } from "react-router-dom";
+import {
+  Box, Typography, Button, Card, CardMedia, CardContent,
+  Chip, Container, Stack, useTheme,
+} from '@mui/material';
+import {
+  BoltOutlined as BoltIcon,
+  GroupsOutlined as GroupsIcon,
+  SecurityOutlined as SecurityIcon,
+  ArrowForwardOutlined as ArrowIcon,
+  AutoAwesomeOutlined as SparkleIcon,
+} from '@mui/icons-material';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const CARDS = [
+  {
+    title: 'SQL',
+    description: 'Run blazing-fast SQL, experiment instantly, and optimize like a pro.',
+    icon: BoltIcon,
+    gradient: 'linear-gradient(135deg, #4096ff 0%, #36cfc9 100%)',
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=60',
+    link: '/sql',
+  },
+  {
+    title: 'NoSQL',
+    description: 'Work with teammates, share results, and collaborate in real-time.',
+    icon: GroupsIcon,
+    gradient: 'linear-gradient(135deg, #9254de 0%, #f759ab 100%)',
+    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=60',
+    link: '/nosql',
+  },
+  {
+    title: 'Vector DB',
+    description: 'Your data stays protected with enterprise-grade security.',
+    icon: SecurityIcon,
+    gradient: 'linear-gradient(135deg, #52c41a 0%, #36cfc9 100%)',
+    image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&w=800&q=60',
+    link: '/vector-database',
+  },
+];
 
 export default function Landing() {
-  const theme = useSelector((s) => s.theme);
-  const [hoveredCard, setHoveredCard] = useState(null);
+  const theme    = useTheme();
   const navigate = useNavigate();
-
-  const cards = [
-    {
-      title: "SQL",
-      description:
-        "Run blazing-fast SQL, experiment instantly, and optimize like a pro.",
-      icon: Zap,
-      gradient: "from-blue-500 to-cyan-400",
-      image:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=60",
-      link: "/sql",
-    },
-    {
-      title: "NO SQL",
-      description:
-        "Work with teammates, share results, and collaborate in real-time.",
-      icon: Users,
-      gradient: "from-purple-500 to-pink-400",
-      image:
-        "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=60",
-    },
-    {
-      title: "Vector DB",
-      description: "Your data stays protected with enterprise-grade security.",
-      icon: Shield,
-      gradient: "from-green-500 to-cyan-400",
-      image:
-        "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&w=800&q=60",
-    },
-  ];
+  const [hovered, setHovered] = useState(null);
 
   return (
-    <div
-      className={`min-h-screen ${themeClasses[theme].bg} ${themeClasses[theme].text}`}
-    >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
+    <Box sx={{ minHeight: '100%', position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient blobs */}
+      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.25 }}>
+        <Box sx={{ position: 'absolute', top: 80,  left: 40,  width: 288, height: 288, borderRadius: '50%', bgcolor: 'primary.main',  filter: 'blur(80px)' }} />
+        <Box sx={{ position: 'absolute', bottom: 80, right: 40, width: 384, height: 384, borderRadius: '50%', bgcolor: '#9254de', filter: 'blur(80px)' }} />
+      </Box>
 
-      <div className="relative px-6 py-20 flex flex-col items-center">
-        {/* Hero Section */}
-        <div className="text-center max-w-4xl mb-20 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 backdrop-blur-sm mb-6">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-medium bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              The Future of SQL Development
-            </span>
-          </div>
+      <Container maxWidth="xl" sx={{ position: 'relative', py: 8 }}>
+        {/* Hero */}
+        <Stack alignItems="center" textAlign="center" spacing={3} sx={{ mb: 8 }}>
+          <Chip
+            icon={<SparkleIcon sx={{ fontSize: '14px !important', color: '#36cfc9 !important' }} />}
+            label="The Future of SQL Development"
+            variant="outlined"
+            size="small"
+            sx={{
+              borderColor: 'primary.light',
+              color: 'primary.main',
+              bgcolor: 'primary.lighter',
+              fontWeight: 500,
+              px: 1,
+            }}
+          />
 
-          <h1 className="text-6xl md:text-7xl font-black tracking-tight mb-6">
-            Welcome to{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
-              BrewQuery
-            </span>
-          </h1>
-
-          <p
-            className={`text-xl ${themeClasses[theme].text} opacity-80 mb-8 leading-relaxed`}
+          <Typography
+            variant="h1"
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '2.5rem', md: '3.5rem', lg: '4rem' },
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+            }}
           >
-            A lightning-fast, modern SQL playground with powerful tools built
-            for developers, teams, and data enthusiasts.
-          </p>
+            Welcome to{' '}
+            <Box
+              component="span"
+              sx={{
+                background: 'linear-gradient(90deg, #4096ff, #36cfc9, #9254de)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              BrewQuery
+            </Box>
+          </Typography>
 
-          <div className="flex gap-4   justify-center flex-wrap">
-            <button className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 flex items-center gap-2">
+          <Typography
+            variant="body1"
+            sx={{ maxWidth: 560, color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.7 }}
+          >
+            A lightning-fast, modern SQL playground with powerful tools built for
+            developers, teams, and data enthusiasts.
+          </Typography>
+
+          <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center">
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowIcon />}
+              onClick={() => navigate('/sql')}
+              sx={{
+                px: 4, py: 1.5,
+                background: 'linear-gradient(90deg, #1677ff, #36cfc9)',
+                boxShadow: '0 8px 20px rgba(22,119,255,0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #0958d9, #13c2c2)',
+                  boxShadow: '0 12px 28px rgba(22,119,255,0.4)',
+                },
+              }}
+            >
               Get Started
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button
-              className={`px-8 py-4 ${
-                themeClasses[theme].cardBg
-              } backdrop-blur-sm rounded-xl font-semibold border ${
-                themeClasses[theme].border || "border-gray-700"
-              } hover:opacity-90 transition-all duration-300 hover:scale-105`}
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              sx={{ px: 4, py: 1.5 }}
             >
               Watch Demo
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Stack>
+        </Stack>
 
-        {/* Cards Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl w-full">
-          {cards.map((card, idx) => {
+        {/* Cards */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
+            gap: 3,
+          }}
+        >
+          {CARDS.map((card, idx) => {
             const Icon = card.icon;
+            const isHovered = hovered === idx;
+
             return (
-              <div
+              <Card
                 key={card.title}
-                onMouseEnter={() => setHoveredCard(idx)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className="group relative"
-                style={{ animationDelay: `${idx * 150}ms` }}
+                elevation={isHovered ? 8 : 1}
+                onMouseEnter={() => setHovered(idx)}
+                onMouseLeave={() => setHovered(null)}
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transform: isHovered ? 'translateY(-6px)' : 'translateY(0)',
+                  transition: 'all 0.3s ease',
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
+                onClick={() => card.link && navigate(card.link)}
               >
-                {/* Glow effect */}
-                <div
-                  className={`absolute bg-gradient-to-r ${card.gradient} rounded-2xl blur opacity-0 group-hover:opacity-60 transition duration-500`}
-                ></div>
+                {/* Image */}
+                <Box sx={{ position: 'relative', height: 200, overflow: 'hidden' }}>
+                  <CardMedia
+                    component="img"
+                    image={card.image}
+                    alt={card.title}
+                    sx={{
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                      transition: 'transform 0.5s ease',
+                    }}
+                  />
+                  {/* Gradient overlay */}
+                  <Box sx={{ position: 'absolute', inset: 0, background: card.gradient, opacity: isHovered ? 0.55 : 0.35, transition: 'opacity 0.4s' }} />
 
-                {/* Card */}
-                <div
-                  className={`relative h-full ${
-                    themeClasses[theme].cardBg
-                  } backdrop-blur-xl rounded-2xl border ${
-                    themeClasses[theme].border || "border-gray-700"
-                  } overflow-hidden transition-all duration-500 hover:-translate-y-2 shadow-lg hover:shadow-2xl`}
-                >
-                  {/* Image with overlay */}
-                  <div className="relative h-48 overflow-hidden ">
-                    <img
-                      src={card.image}
-                      alt={card.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-40 group-hover:opacity-60 transition-opacity duration-500`}
-                    ></div>
+                  {/* Floating icon */}
+                  <Box
+                    sx={{
+                      position: 'absolute', top: 16, right: 16,
+                      p: 1.25,
+                      background: card.gradient,
+                      borderRadius: 2,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                      transform: isHovered ? 'scale(1.12) rotate(12deg)' : 'scale(1)',
+                      transition: 'transform 0.4s',
+                    }}
+                  >
+                    <Icon sx={{ fontSize: 24, color: '#fff' }} />
+                  </Box>
+                </Box>
 
-                    {/* Floating icon */}
-                    <div
-                      className={`absolute top-4 right-4 p-3 bg-gradient-to-br ${
-                        card.gradient
-                      } rounded-xl shadow-lg transform transition-all duration-500 ${
-                        hoveredCard === idx
-                          ? "scale-110 rotate-12"
-                          : "scale-100 rotate-0"
-                      }`}
-                    >
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+                    {card.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+                    {card.description}
+                  </Typography>
+                  <Button
+                    size="small"
+                    endIcon={<ArrowIcon />}
+                    sx={{
+                      p: 0,
+                      background: card.gradient,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontWeight: 600,
+                      '&:hover': { bgcolor: 'transparent' },
+                    }}
+                  >
+                    Learn More
+                  </Button>
+                </CardContent>
 
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3
-                      className={`text-2xl font-bold mb-3 ${themeClasses[theme].text} group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300`}
-                    >
-                      {card.title}
-                    </h3>
-                    <p
-                      className={`${themeClasses[theme].text} opacity-70 text-sm leading-relaxed mb-4`}
-                    >
-                      {card.description}
-                    </p>
-
-                    <button
-                      className={`flex items-center gap-2 text-sm font-semibold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent group-hover:gap-3 transition-all duration-300`}
-                      onClick={()=> navigate(card.link)}
-                    >
-                      Learn More
-                      <ArrowRight
-                        className={`w-4 h-4 ${themeClasses[theme].text} opacity-60 group-hover:opacity-100 transition-all`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Animated border */}
-                  <div
-                    className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${card.gradient} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
-                  ></div>
-                </div>
-              </div>
+                {/* Bottom gradient bar */}
+                <Box
+                  sx={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+                    background: card.gradient,
+                    transform: isHovered ? 'scaleX(1)' : 'scaleX(0)',
+                    transformOrigin: 'left',
+                    transition: 'transform 0.4s ease',
+                  }}
+                />
+              </Card>
             );
           })}
-        </div>
-
-
-      
-      </div>
-
-      
-    </div>
+        </Box>
+      </Container>
+    </Box>
   );
 }

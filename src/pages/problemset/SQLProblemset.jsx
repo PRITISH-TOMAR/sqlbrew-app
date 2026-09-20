@@ -1,65 +1,40 @@
-// REACT MODULES
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
+import DatabaseBar   from '../../components/databases/DatabaseBar.jsx';
+import ProblemsList  from '../../components/databases/ProblemsList.jsx';
+import { loadDatasetDetails, loadSQLQuestionSet } from '../../api/databaseApi';
 
-// IMPORTS
-import DatabaseBar from "../../components/databases/DatabaseBar";
-import ProblemsList from "../../components/databases/ProblemsList";
-import useNavbarHeight from "../../hooks/useNavbarHeight";
-import { loadDatasetDetails, loadSQLQuestionSet } from "../../api/databaseApi";
-import { useParams } from "react-router-dom";
-
-const SQLProblemset = () => {
-  // HOOKS
-  const navbarHeight = useNavbarHeight();
+export default function SQLProblemset() {
   const { dbId } = useParams();
+  const [data,            setData]            = useState(null);
+  const [problems,        setProblems]        = useState([]);
+  const [loadingProblems, setLoadingProblems] = useState(true);
 
-  // STATES
-  const [data, setData] = useState(null);
-  const [problems, setProblems] = useState([]);
-
-  // USEFFECT : Load Dataset Details
   useEffect(() => {
-    let isMounted = true;
-
-    loadDatasetDetails(dbId).then((response) => {
-      if (isMounted && response.success) {
-        setData(response.data);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
+    let alive = true;
+    loadDatasetDetails(dbId).then((res) => { if (alive && res.success) setData(res.data); });
+    return () => { alive = false; };
   }, [dbId]);
 
-  // USEFFECT : Load Problems
   useEffect(() => {
-    let isMounted = true;
-
-    loadSQLQuestionSet(dbId).then((response) => {
-      if (isMounted && response.success) {
-        setProblems(response.data);
-      }
+    let alive = true;
+    setLoadingProblems(true);
+    loadSQLQuestionSet(dbId).then((res) => {
+      if (alive && res.success) setProblems(res.data);
+      if (alive) setLoadingProblems(false);
     });
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { alive = false; };
   }, [dbId]);
 
   return (
-    <div
-      style={{ minHeight: `calc(100vh - ${navbarHeight}px)` }}
-      className="flex w-full"
-    >
-      <div className="w-full lg:w-4/5">
-        <ProblemsList items={problems || []} />
-      </div>
-      <div className="hidden lg:block w-1/5 overflow-hidden">
+    <Box sx={{ display: 'flex', width: '100%', minHeight: '100%' }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <ProblemsList items={problems} loading={loadingProblems} />
+      </Box>
+      <Box sx={{ display: { xs: 'none', lg: 'block' }, width: 260, flexShrink: 0 }}>
         <DatabaseBar database={data || {}} />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
-};
-
-export default SQLProblemset;
+}
