@@ -1,119 +1,162 @@
-// REACT MODULES
-import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-
-// IMPORTS
-import { toggleTheme } from "../../redux/slices/themeSlice";
-import { themeClasses } from "../../utils/classes/themeClasses";
-import LogoImage from "./LogoImage";
-
-// UTILITIES
+import { useState } from 'react';
 import {
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
-import { IoSunnySharp, IoMoon, IoSunny } from "react-icons/io5";
+  AppBar, Toolbar, IconButton, InputBase, Box,
+  Avatar, Menu, MenuItem, Tooltip, useTheme, useMediaQuery,
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Search as SearchIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
+  AccountCircle as AccountCircleIcon,
+} from '@mui/icons-material';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toggleTheme } from '../../redux/slices/themeSlice.js';
+import { logoutUser } from '../../api/authApi.js';
+import { useSidebar } from '../../context/SidebarContext.jsx';
+import { APP_BAR_HEIGHT, isFocusRoute } from '../../config/layout.js';
+import LogoImage from './LogoImage.jsx';
 
 export default function Topbar() {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const theme = useSelector((state) => state.theme);
-  const { user, isAuthenticated } = useSelector((state) => state.auth || {});
+  const theme     = useTheme();
+  const themeMode = useSelector((s) => s.theme);
+  const { user, isAuthenticated } = useSelector((s) => s.auth || {});
+  const dispatch  = useDispatch();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { open: drawerOpen, toggle } = useSidebar();
+  const isLg = useMediaQuery(theme.breakpoints.up('lg'));
+  const focusMode = isFocusRoute(location.pathname);
 
-  const [openMenu, setOpenMenu] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   return (
-    <div
-      id="app-navbar"
-      className={`
-        w-full h-16 px-6 flex items-center justify-between 
-        border-b-2 ${themeClasses[theme].border}  shadow-sm fixed top-0 left-0 z-[9999]
-        ${themeClasses[theme].navBg}
-        ${themeClasses[theme].text}
-      `}
+    <AppBar
+      position="fixed"
+      elevation={0}
+      sx={{
+        height: APP_BAR_HEIGHT,
+        zIndex: theme.zIndex.drawer + 1,
+        left: 0,
+        width: '100%',
+        bgcolor: theme.palette.background.paper,
+        color:   theme.palette.text.primary,
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        boxShadow: 'none',
+        overflow: 'visible',
+      }}
     >
-      <LogoImage/>
-
-      <div className="hidden md:flex w-1/3 relative">
-        <input
-          type="text"
-          placeholder="Search..."
-          className={`
-            w-full px-4 py-2 rounded-lg border 
-            bg-transparent outline-none
-            ${
-              theme === "light"
-                ? "border-gray-300 text-light-text"
-                : "border-gray-600 text-dark-text"
-            }
-          `}
-        />
-        <MagnifyingGlassIcon className="h-5 w-5 absolute right-3 top-2.5 opacity-70" />
-      </div>
-
-      <div className="flex items-center gap-4">
-        <button
-          className="px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-          onClick={() => dispatch(toggleTheme())}
-        >
-          {theme === "light" ? (
-            <IoMoon size={20} />
-          ) : (
-            <IoSunny color="yellow" size={20} />
+      <Toolbar
+        disableGutters
+        sx={{
+          minHeight: `${APP_BAR_HEIGHT}px !important`,
+          height: APP_BAR_HEIGHT,
+          px: 2,
+          position: 'relative',
+        }}
+      >
+        {/* LEFT — toggle + logo */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+          {!focusMode && location.pathname !== '/login' && (
+            <Tooltip title={drawerOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+              <IconButton onClick={toggle} size="small">
+                <MenuIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
-        </button>
+          <LogoImage size={100} />
+        </Box>
 
-        {!isAuthenticated && (
-          <>
-            <button
-              onClick={() => navigate("/login")}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+        {/* CENTER — search bar, absolutely centred so it stays in the middle regardless of left/right content */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: { xs: 'none', sm: 'flex' },
+            alignItems: 'center',
+            bgcolor: 'action.hover',
+            borderRadius: 1,
+            px: 1.5, py: 0.5,
+            width: 360,
+            gap: 1,
+            border: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <SearchIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <InputBase
+            placeholder="Search…"
+            sx={{ fontSize: '0.875rem', flex: 1 }}
+          />
+        </Box>
+
+        {/* RIGHT — theme toggle + login/avatar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, justifyContent: 'flex-end' }}>
+          <Tooltip title={themeMode === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <IconButton size="small" onClick={() => dispatch(toggleTheme())}>
+              {themeMode === 'dark'
+                ? <LightModeIcon fontSize="small" sx={{ color: '#faad14' }} />
+                : <DarkModeIcon  fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+
+          {!isAuthenticated && (
+            <Box
+              component="button"
+              onClick={() => navigate('/login')}
+              sx={{
+                px: 2, py: 0.5,
+                bgcolor: 'primary.main',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 1,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'background-color 0.2s',
+                '&:hover': { bgcolor: 'primary.dark' },
+              }}
             >
               Login
-            </button>
-          </>
-        )}
+            </Box>
+          )}
 
-        {isAuthenticated && (
-          <div className="relative">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => setOpenMenu(!openMenu)}
-            >
-              <img
-                src={user?.avatar || "https://i.pravatar.cc/100"}
-                className="h-8 w-8 rounded-full border"
-                alt="user"
-              />
-              <ChevronDownIcon
-                className={`h-4 w-4 transition-transform ${
-                  openMenu ? "rotate-180" : ""
-                }`}
-              />
-            </div>
+          {isAuthenticated && (
+            <>
+              <Tooltip title="Account">
+                <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
+                  <Avatar
+                    src={user?.avatar || undefined}
+                    sx={{ width: 30, height: 30, fontSize: '0.75rem' }}
+                  >
+                    {!user?.avatar && <AccountCircleIcon />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
 
-            {openMenu && (
-              <div
-                className={`
-                  absolute right-0 mt-2 w-40 rounded-lg shadow-lg border 
-                  p-2 ${themeClasses[theme]}
-                `}
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                PaperProps={{ sx: { mt: 0.5, minWidth: 160 } }}
               >
-                <a className="block px-3 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
-                  Profile
-                </a>
-                <a className="block px-3 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
-                  Settings
-                </a>
-                <a className="block px-3 py-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded">
+                <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
+                <MenuItem onClick={() => setAnchorEl(null)}>Settings</MenuItem>
+                <MenuItem
+                  onClick={() => { setAnchorEl(null); logoutUser(); }}
+                  sx={{ color: 'error.main' }}
+                >
                   Logout
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

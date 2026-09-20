@@ -3,7 +3,7 @@
 // IMPORTS
 import { store } from '../redux/store';
 import { ApiResponse } from '../utils/classes/ApiResponse';
-import { setLoading, setUser } from '../redux/slices/authSlice';
+import { setLoading, setUser, logout } from '../redux/slices/authSlice';
 import api from "./globalApi"
 
 // UTILITIES
@@ -136,6 +136,16 @@ export const resetPassword = async (payload) => {
     toast.error(error.response?.data.message);
     return ApiResponse.error(error.message);
   }
+};
+
+export const logoutUser = async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch (_) {
+    // best-effort — clear local state regardless of API result
+  }
+  store.dispatch(logout());
+  toast.success('Logged out successfully');
 };
 
 export const pingResetPassword = async (resetKey) => {

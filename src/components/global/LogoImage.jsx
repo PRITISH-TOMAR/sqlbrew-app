@@ -1,19 +1,34 @@
-import React from "react";
-import brewQuery from "../../assets/images/brewQuery.png";
-import { useNavigate } from "react-router-dom";
+import { Box, useTheme } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import brewQuery from '../../assets/images/brewQuery.png';
 
-const LogoImage = () => {
+export default function LogoImage({ size = 36 }) {
   const navigate = useNavigate();
-  return (
-    <div className="flex items-center gap-3 cursor-pointer" onClick={()=> navigate("/")} >
-      <img
-        src={brewQuery}
-        alt="logo"
-        className={`h-28 w-32 transition-all duration-300  dark:invert
-  `}
-      />
-    </div>
-  );
-};
+  const theme    = useTheme();
 
-export default LogoImage;
+  return (
+    <Box
+      onClick={() => navigate('/')}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        userSelect: 'none',
+        textDecoration: 'none',
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        component="img"
+        src={brewQuery}
+        alt="BrewQuery"
+        sx={{
+          height: size,
+          width:  size,
+          objectFit: 'contain',
+          filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none',
+        }}
+      />
+    </Box>
+  );
+}
