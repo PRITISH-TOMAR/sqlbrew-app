@@ -6,20 +6,18 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, CircularProgress, IconButton, Tooltip, Skeleton, useTheme, LinearProgress,
 } from '@mui/material';
-import {
-  PlayArrowRounded as RunIcon,
-  CheckCircleOutlineRounded as SubmitIcon,
-  ArrowBackRounded as BackIcon,
-  NavigateBeforeRounded as PrevIcon,
-  NavigateNextRounded as NextIcon,
-  CheckCircle as PassIcon,
-  Cancel as FailIcon,
-  TerminalRounded as TerminalIcon,
-  DragIndicatorRounded as HGripIcon,
-  DataObjectRounded as FileIcon,
-  TableChartRounded as SchemaIcon,
-  SubjectRounded as ProblemIcon,
-} from '@mui/icons-material';
+import RunIcon from '@mui/icons-material/PlayArrowRounded';
+import SubmitIcon from '@mui/icons-material/CheckCircleOutlineRounded';
+import BackIcon from '@mui/icons-material/ArrowBackRounded';
+import PrevIcon from '@mui/icons-material/NavigateBeforeRounded';
+import NextIcon from '@mui/icons-material/NavigateNextRounded';
+import PassIcon from '@mui/icons-material/CheckCircle';
+import FailIcon from '@mui/icons-material/Cancel';
+import TerminalIcon from '@mui/icons-material/TerminalRounded';
+import HGripIcon from '@mui/icons-material/DragIndicatorRounded';
+import FileIcon from '@mui/icons-material/DataObjectRounded';
+import SchemaIcon from '@mui/icons-material/TableChartRounded';
+import ProblemIcon from '@mui/icons-material/SubjectRounded';
 import { loadProblemDetails, loadPublicTestCases, runSQLQuery, submitSQLQuery, getJobResult } from '../../api/databaseApi';
 
 const DIFFICULTY_COLOR = { easy: 'success', medium: 'warning', hard: 'error' };

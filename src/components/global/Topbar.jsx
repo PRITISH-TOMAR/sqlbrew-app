@@ -3,13 +3,11 @@ import {
   AppBar, Toolbar, IconButton, InputBase, Box,
   Avatar, Menu, MenuItem, Tooltip, useTheme, useMediaQuery,
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Search as SearchIcon,
-  LightMode as LightModeIcon,
-  DarkMode as DarkModeIcon,
-  AccountCircle as AccountCircleIcon,
-} from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toggleTheme } from '../../redux/slices/themeSlice.js';

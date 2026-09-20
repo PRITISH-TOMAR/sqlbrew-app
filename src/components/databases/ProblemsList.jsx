@@ -2,11 +2,9 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Chip, IconButton, useTheme, Box, Typography, Skeleton,
 } from '@mui/material';
-import {
-  StarBorderOutlined as StarIcon,
-  BookmarkBorderOutlined as BookmarkIcon,
-  LockOutlined as LockIcon,
-} from '@mui/icons-material';
+import StarIcon from '@mui/icons-material/StarBorderOutlined';
+import BookmarkIcon from '@mui/icons-material/BookmarkBorderOutlined';
+import LockIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const LEVEL_CHIP = {

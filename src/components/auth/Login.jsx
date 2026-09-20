@@ -4,7 +4,8 @@ import {
   FormControlLabel, Link, InputAdornment, IconButton,
   CircularProgress, Divider, Box,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';

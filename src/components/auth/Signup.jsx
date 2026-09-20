@@ -3,7 +3,9 @@ import {
   Stack, TextField, Typography, Button, Link, InputAdornment,
   IconButton, CircularProgress, Divider, Box,
 } from '@mui/material';
-import { Visibility, VisibilityOff, LockOutlined as LockIcon } from '@mui/icons-material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import LockIcon from '@mui/icons-material/LockOutlined';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';

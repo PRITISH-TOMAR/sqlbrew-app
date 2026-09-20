@@ -5,16 +5,14 @@ import {
   Pagination as MuiPagination, Skeleton, InputAdornment, TextField,
   Select, MenuItem, Button, alpha, useTheme,
 } from '@mui/material';
-import {
-  StorageOutlined as DatabaseIcon,
-  SearchOutlined as SearchIcon,
-  ArrowForward as ArrowForwardIcon,
-  ListAltOutlined as QuestionsIcon,
-  AccessTimeOutlined as TimeIcon,
-  BarChartOutlined as BarChartIcon,
-  LayersOutlined as LayersIcon,
-  CodeOutlined as CodeIcon,
-} from '@mui/icons-material';
+import DatabaseIcon from '@mui/icons-material/StorageOutlined';
+import SearchIcon from '@mui/icons-material/SearchOutlined';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import QuestionsIcon from '@mui/icons-material/ListAltOutlined';
+import TimeIcon from '@mui/icons-material/AccessTimeOutlined';
+import BarChartIcon from '@mui/icons-material/BarChartOutlined';
+import LayersIcon from '@mui/icons-material/LayersOutlined';
+import CodeIcon from '@mui/icons-material/CodeOutlined';
 import { fetchDatasetGridConfig } from '../../api/configApi';
 
 // Fallbacks used until the config API responds

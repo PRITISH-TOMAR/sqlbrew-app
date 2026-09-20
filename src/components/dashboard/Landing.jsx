@@ -2,13 +2,11 @@ import {
   Box, Typography, Button, Card, CardMedia, CardContent,
   Chip, Container, Stack, useTheme,
 } from '@mui/material';
-import {
-  BoltOutlined as BoltIcon,
-  GroupsOutlined as GroupsIcon,
-  SecurityOutlined as SecurityIcon,
-  ArrowForwardOutlined as ArrowIcon,
-  AutoAwesomeOutlined as SparkleIcon,
-} from '@mui/icons-material';
+import BoltIcon from '@mui/icons-material/BoltOutlined';
+import GroupsIcon from '@mui/icons-material/GroupsOutlined';
+import SecurityIcon from '@mui/icons-material/SecurityOutlined';
+import ArrowIcon from '@mui/icons-material/ArrowForwardOutlined';
+import SparkleIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

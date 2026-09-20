@@ -1,16 +1,14 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import {
-  MenuBookOutlined as PracticeIcon,
-  BarChartOutlined as StructuredIcon,
-  EmojiEventsOutlined as TrophyIcon,
-  SpeedOutlined as SpeedIcon,
-  AccountTreeOutlined as FlexibleIcon,
-  SearchOutlined as SearchIcon,
-  BoltOutlined as BoltIcon,
-  ScatterPlotOutlined as EmbeddingIcon,
-  TuneOutlined as TuneIcon,
-} from '@mui/icons-material';
+import PracticeIcon from '@mui/icons-material/MenuBookOutlined';
+import StructuredIcon from '@mui/icons-material/BarChartOutlined';
+import TrophyIcon from '@mui/icons-material/EmojiEventsOutlined';
+import SpeedIcon from '@mui/icons-material/SpeedOutlined';
+import FlexibleIcon from '@mui/icons-material/AccountTreeOutlined';
+import SearchIcon from '@mui/icons-material/SearchOutlined';
+import BoltIcon from '@mui/icons-material/BoltOutlined';
+import EmbeddingIcon from '@mui/icons-material/ScatterPlotOutlined';
+import TuneIcon from '@mui/icons-material/TuneOutlined';
 import AuthContainer  from './pages/authentication/AuthContainer.jsx';
 import Dashboard      from './pages/Dashboard.jsx';
 import DatasetGrid    from './components/databases/DatabaseGrid.jsx';

@@ -3,16 +3,15 @@ import {
   ListItemText, Tooltip, Typography, Collapse,
   useTheme, useMediaQuery,
 } from '@mui/material';
-import {
-  DashboardOutlined as DashboardIcon,
-  StorageOutlined as StorageIcon,
-  AccountTreeOutlined as NoSQLIcon,
-  BlurOnOutlined as VectorIcon,
-  TrendingUpOutlined as ProgressIcon,
-  EmojiEventsOutlined as ContestsIcon,
-  MenuBookOutlined as ResourcesIcon,
-  ExpandLess, ExpandMore,
-} from '@mui/icons-material';
+import DashboardIcon from '@mui/icons-material/DashboardOutlined';
+import StorageIcon from '@mui/icons-material/StorageOutlined';
+import NoSQLIcon from '@mui/icons-material/AccountTreeOutlined';
+import VectorIcon from '@mui/icons-material/BlurOnOutlined';
+import ProgressIcon from '@mui/icons-material/TrendingUpOutlined';
+import ContestsIcon from '@mui/icons-material/EmojiEventsOutlined';
+import ResourcesIcon from '@mui/icons-material/MenuBookOutlined';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../context/SidebarContext.jsx';
