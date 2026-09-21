@@ -1,16 +1,83 @@
-# React + Vite
+# BrewQuery — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. What the App Is
 
-Currently, two official plugins are available:
+BrewQuery is a modern database learning playground. The core idea is dataset-centric: you pick a real-world dataset, explore its schema, and solve query challenges written against that actual data — which gets loaded into a live in-memory session on the backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The split-pane editor lets you write and run queries interactively, inspect results, and submit for full judging across all test cases. Problems are organized by dataset rather than as a flat problem bank.
 
-## React Compiler
+Currently supports SQL, with NoSQL and VectorDB sections planned.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 2. Tech Stack
 
-## Expanding the ESLint configuration
+| Layer | Library / Tool |
+|---|---|
+| Framework | React 18 |
+| Build tool | Vite 7 |
+| UI components | MUI v7 (@mui/material) |
+| Styling | Tailwind CSS + Emotion |
+| State management | Redux Toolkit + redux-persist |
+| Routing | React Router v7 |
+| SQL editor | Monaco Editor (@monaco-editor/react) |
+| HTTP client | Axios |
+| Notifications | react-hot-toast |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 3. Project Structure
+
+```
+src/
+  api/            # Axios instance + per-domain API functions
+  assets/         # Images and static files
+  components/
+    auth/         # Login, Signup, OTP, ResetPassword
+    databases/    # DatasetGrid, ProblemsList, DatabaseBar
+    dashboard/    # Landing component
+    global/       # Topbar, Sidebar, FormInput, Pagination, etc.
+    judge/        # SQLTestComparison (verdict display)
+  config/         # Layout constants (APP_BAR_HEIGHT, focus routes)
+  context/        # SidebarContext
+  hooks/          # useNavbarHeight, useSidebarWidth
+  pages/
+    authentication/  # AuthContainer
+    problemset/      # SQLProblemset, ProblemSolver
+    Dashboard.jsx
+  redux/
+    slices/       # authSlice, themeSlice
+    store.js
+  theme/          # MUI theme (palette, typography, shadows, overrides)
+  utils/
+    classes/      # ApiResponse, CountryCodeDropDown, themeClasses
+    helpers/      # PasswordStrengthBar, ProblemGridRow
+  App.jsx         # Root layout (Topbar + Sidebar + Routing)
+  Routing.jsx     # Route definitions + auth guards
+  main.jsx        # Entry point
+```
+
+## 4. Environment Setup
+
+Create a `.env.local` file in the project root:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Point this at the running `brewquery/services` backend.
+
+## 5. Dev Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run start
+
+# Production build
+npm run build
+
+# Preview production build locally
+npm run preview
+
+# Lint
+npm run lint
+```
