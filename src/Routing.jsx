@@ -15,6 +15,7 @@ import DatasetGrid    from './components/databases/DatabaseGrid.jsx';
 import { loadSQLDatasets, loadNoSQLDatasets, loadVectorDBDatasets } from './api/databaseApi.js';
 import SQLProblemset  from './pages/problemset/SQLProblemset.jsx';
 import ProblemSolver  from './pages/problemset/ProblemSolver.jsx';
+import UserProfile    from './pages/profile/UserProfile.jsx';
 
 // ─── SQL — Blue ──────────────────────────────────────────────────────────────
 const SQL_COLOR    = '#2563eb';
@@ -76,6 +77,9 @@ export default function Routing() {
         } />
         <Route path="/sql/:dbId"            element={<SQLProblemset />} />
         <Route path="/sql/:dbId/:problemId" element={<ProblemSolver />} />
+
+        {/* User Profile */}
+        <Route path="/master/:userId" element={<UserProfile />} />
 
         {/* NoSQL */}
         <Route path="/nosql" element={

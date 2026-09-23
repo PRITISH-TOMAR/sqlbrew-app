@@ -14,6 +14,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { useSidebar } from '../../context/SidebarContext.jsx';
 import { APP_BAR_HEIGHT, DRAWER_WIDTH, ICON_DRAWER_WIDTH } from '../../config/layout.js';
 
@@ -55,7 +56,7 @@ function NavItem({ item, drawerOpen }) {
     ? item.children.some((c) => pathname.startsWith(c.path))
     : item.path === '/'
       ? pathname === '/'
-      : pathname.startsWith(item.path);
+      : pathname.startsWith(item.path) || (pathname.startsWith('/master') && item.label === 'Profile');
 
   const handleClick = () => {
     if (hasChildren) {
@@ -149,14 +150,21 @@ function NavItem({ item, drawerOpen }) {
 }
 
 function DrawerContent({ open }) {
-  const theme = useTheme();
+  const user = useSelector((s) => s.auth.user);
+
+  // Resolve dynamic paths (e.g. Profile → /master/:userId)
+  const resolvedItems = NAV_ITEMS.map((item) =>
+    item.dynamic && user?.id
+      ? { ...item, path: `${item.path}/${user.id}` }
+      : item
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 2 }}>
       {/* Nav list */}
       <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mt: 0.5 }}>
         <List disablePadding>
-          {NAV_ITEMS.map((item) => (
+          {resolvedItems.map((item) => (
             <NavItem key={item.label} item={item} drawerOpen={open} />
           ))}
         </List>

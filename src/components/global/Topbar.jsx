@@ -142,7 +142,7 @@ export default function Topbar() {
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 PaperProps={{ sx: { mt: 0.5, minWidth: 160 } }}
               >
-                <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
+                <MenuItem onClick={() => { setAnchorEl(null); navigate(`/master/${user?.userId ?? ''}`); }}>Profile</MenuItem>
                 <MenuItem onClick={() => setAnchorEl(null)}>Settings</MenuItem>
                 <MenuItem
                   onClick={() => { setAnchorEl(null); logoutUser(); }}
