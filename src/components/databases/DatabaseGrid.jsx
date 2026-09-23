@@ -13,7 +13,7 @@ import TimeIcon from '@mui/icons-material/AccessTimeOutlined';
 import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 import LayersIcon from '@mui/icons-material/LayersOutlined';
 import CodeIcon from '@mui/icons-material/CodeOutlined';
-import { fetchDatasetGridConfig } from '../../api/configApi';
+import { fetchDatasetGridConfig, fetchPageConfig } from '../../api/configApi';
 
 // Fallbacks used until the config API responds
 const DEFAULT_DIFFICULTY_LEVELS = ['All Levels', 'Easy', 'Medium', 'Advanced'];
@@ -351,7 +351,7 @@ export default function DatasetGrid({
   subtitle,
   badge,
   features = [],
-  heroImage,
+  pageKey,
   cardLabel = 'Dataset',
   ctaLabel = 'Start Learning',
   searchPlaceholder = 'Search datasets...',
@@ -366,6 +366,7 @@ export default function DatasetGrid({
   const [levelFilter,      setLevelFilter]      = useState('All Levels');
   const [difficultyLevels, setDifficultyLevels] = useState(DEFAULT_DIFFICULTY_LEVELS);
   const [difficultyColor,  setDifficultyColor]  = useState(DEFAULT_DIFFICULTY_COLOR);
+  const [heroImage,        setHeroImage]        = useState(null);
   const pageFromUrl   = Number(searchParams.get('page')) || 1;
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
@@ -379,6 +380,13 @@ export default function DatasetGrid({
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!pageKey) return;
+    fetchPageConfig(pageKey).then((res) => {
+      if (res.success && res.data.heroImageUrl) setHeroImage(res.data.heroImageUrl);
+    });
+  }, [pageKey]);
 
   useEffect(() => {
     setLoading(true);

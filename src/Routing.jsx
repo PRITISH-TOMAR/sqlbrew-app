@@ -71,6 +71,7 @@ export default function Routing() {
             titleHighlight="Learning Paths"
             subtitle="Explore our comprehensive database courses and challenges"
             features={SQL_FEATURES}
+            pageKey="sql"
             cardLabel="Dataset"
             ctaLabel="Start Learning"
           />
@@ -92,6 +93,7 @@ export default function Routing() {
             titleHighlight="Collections"
             subtitle="Master non-relational databases with real-world document and graph datasets"
             features={NOSQL_FEATURES}
+            pageKey="nosql"
             cardLabel="Collection"
             ctaLabel="Explore Collection"
           />
@@ -108,6 +110,7 @@ export default function Routing() {
             titleHighlight="Databases"
             subtitle="Learn vector search and semantic similarity with AI-powered dataset challenges"
             features={VECTORDB_FEATURES}
+            pageKey="vectordb"
             cardLabel="Index"
             ctaLabel="Start Searching"
           />
