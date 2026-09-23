@@ -87,13 +87,13 @@ export const buildPalette = (mode) => {
       secondary: grey[5],
       disabled:  mode === 'dark' ? 'rgba(255,255,255,0.3)' : grey[4],
     },
-    divider: mode === 'dark' ? 'rgba(255,255,255,0.05)' : grey[3],
+    divider: mode === 'dark' ? 'rgba(255,255,255,0.12)' : grey[3],
     background: {
       paper:   mode === 'dark' ? '#1e1e1e' : '#ffffff',
       default: mode === 'dark' ? '#121212' : '#fafafb',
     },
     action: {
-      disabled: grey[3],
+      disabled: mode === 'dark' ? 'rgba(255,255,255,0.3)' : grey[3],
     },
   };
 };
