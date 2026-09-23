@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import DatabaseBar   from '../../components/databases/DatabaseBar.jsx';
 import ProblemsList  from '../../components/databases/ProblemsList.jsx';
 import { loadDatasetDetails, loadSQLQuestionSet } from '../../api/databaseApi';
+import { APP_BAR_HEIGHT } from '../../config/layout.js';
 
 export default function SQLProblemset() {
   const { dbId } = useParams();
@@ -32,7 +33,17 @@ export default function SQLProblemset() {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <ProblemsList items={problems} loading={loadingProblems} />
       </Box>
-      <Box sx={{ display: { xs: 'none', lg: 'block' }, width: 260, flexShrink: 0 }}>
+      <Box
+        sx={{
+          display: { xs: 'none', lg: 'block' },
+          width: 260,
+          flexShrink: 0,
+          position: 'sticky',
+          top: APP_BAR_HEIGHT,
+          height: `calc(100vh - ${APP_BAR_HEIGHT}px)`,
+          overflow: 'hidden',
+        }}
+      >
         <DatabaseBar database={data || {}} />
       </Box>
     </Box>

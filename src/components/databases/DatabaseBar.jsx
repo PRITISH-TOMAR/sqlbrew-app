@@ -1,6 +1,8 @@
 import {
-  Box, Typography, Chip, Stack, Divider, useTheme,
+  Box, Typography, Chip, Stack, Divider, useTheme, alpha,
 } from '@mui/material';
+import TableIcon from '@mui/icons-material/TableChartOutlined';
+import TimeIcon from '@mui/icons-material/AccessTimeOutlined';
 
 export default function DatabaseBar({ database }) {
   const theme = useTheme();
@@ -27,20 +29,35 @@ export default function DatabaseBar({ database }) {
         </Typography>
       )}
 
-      {database.difficulty && (
-        <Stack spacing={0.5}>
-          <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
-            Difficulty
-          </Typography>
+      {/* Difficulty + stats row */}
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        {database.difficulty && (
           <Chip
             label={database.difficulty}
             color={diffColor}
             variant="outlined"
             size="small"
-            sx={{ alignSelf: 'flex-start', textTransform: 'capitalize', fontWeight: 600 }}
+            sx={{ textTransform: 'capitalize', fontWeight: 600 }}
           />
-        </Stack>
-      )}
+        )}
+        {database.tableCount > 0 && (
+          <Chip
+            icon={<TableIcon sx={{ fontSize: '14px !important' }} />}
+            label={`${database.tableCount} Tables`}
+            size="small"
+            variant="outlined"
+            sx={{ fontWeight: 600 }}
+          />
+        )}
+        {database.estimatedTime && (
+          <Chip
+            icon={<TimeIcon sx={{ fontSize: '14px !important' }} />}
+            label={database.estimatedTime}
+            size="small"
+            variant="outlined"
+          />
+        )}
+      </Stack>
 
       {database.tags?.length > 0 && (
         <>
@@ -51,12 +68,33 @@ export default function DatabaseBar({ database }) {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
               {database.tags.map((t) => (
+                <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+              ))}
+            </Box>
+          </Stack>
+        </>
+      )}
+
+      {database.skills?.length > 0 && (
+        <>
+          <Divider />
+          <Stack spacing={1}>
+            <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+              Skills
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+              {database.skills.map((s) => (
                 <Chip
-                  key={t}
-                  label={t}
+                  key={s}
+                  label={s}
                   size="small"
-                  variant="outlined"
-                  sx={{ fontSize: '0.7rem' }}
+                  sx={{
+                    fontSize: '0.7rem',
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                    color: 'primary.main',
+                    border: '1px solid',
+                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.25),
+                  }}
                 />
               ))}
             </Box>
