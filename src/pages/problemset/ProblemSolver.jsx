@@ -128,6 +128,7 @@ function ExampleBlock({ index, tc }) {
 // ── Problem description panel (left) ──────────────────────────────────────────
 function ProblemPanel({ problem, loading, testCases, tcLoading }) {
   const [tab, setTab] = useState(0); // 0 = Problem, 1 = Schema
+  const [showTags, setShowTags] = useState(false);
 
   const q    = problem?.question;
   const meta = problem?.metadata;
@@ -168,8 +169,17 @@ function ProblemPanel({ problem, loading, testCases, tcLoading }) {
               sx={{ fontSize: '0.7rem', fontWeight: 600, bgcolor: 'action.hover', color: 'text.secondary' }}
             />
           )}
-          {q?.tags?.map((tag) => (
-            <Chip key={tag} label={tag} size="small" sx={{ fontSize: '0.7rem', bgcolor: 'primary.lighter', color: 'primary.main' }} />
+          {q?.tags?.length > 0 && (
+            <Chip
+              label={showTags ? 'Hide tags' : `Tags (${q.tags.length})`}
+              size="small"
+              variant="outlined"
+              onClick={() => setShowTags((v) => !v)}
+              sx={{ fontSize: '0.7rem', cursor: 'pointer' }}
+            />
+          )}
+          {showTags && q?.tags?.map((tag) => (
+            <Chip key={tag} label={tag} size="small" sx={{ fontSize: '0.7rem', bgcolor: 'action.hover', color: 'text.secondary' }} />
           ))}
         </Stack>
       </Box>
@@ -305,14 +315,14 @@ function ResultsPanel({ result, running, submitting }) {
   }
 
   // Submit result (verdict)
-  if (result.verdict) {
-    const passed = result.verdict === 'ACCEPTED';
+  if (result.result) {
+    const passed = result.result === 'ACCEPTED';
     return (
       <Box sx={{ p: 2 }}>
         <Stack direction="row" alignItems="center" gap={1} mb={1.5}>
           {passed ? <PassIcon color="success" /> : <FailIcon color="error" />}
           <Typography variant="subtitle1" fontWeight={700} color={passed ? 'success.main' : 'error.main'}>
-            {passed ? 'Accepted' : result.verdict}
+            {passed ? 'Accepted' : result.result}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
             {result.passCount}/{result.totalCount} test cases passed
@@ -432,7 +442,7 @@ export default function ProblemSolver() {
         return;
       }
       const jobRes = await getJobResult(jobId);
-      if (jobRes.success && jobRes.data?.verdict && jobRes.data.verdict !== 'PENDING') {
+      if (jobRes.success && jobRes.data?.result && jobRes.data.result !== 'PENDING') {
         setResult(jobRes.data);
         setSubmitting(false);
       } else {
