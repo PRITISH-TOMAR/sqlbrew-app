@@ -170,17 +170,6 @@ export const loadExpectedOutput = async (questionId) => {
   }
 };
 
-export const loadPublicTestCases = async (questionId) => {
-  try {
-    const response = await api.get(`/db/sql/problem/${questionId}/testcases`);
-    if (response.status === 200) {
-      return ApiResponse.success(response.data.message, response.data.data);
-    }
-    return ApiResponse.error(response.data.message);
-  } catch (error) {
-    return ApiResponse.error(error.message);
-  }
-};
 
 export const loadSQLQuestionSet = async (payloadId) => {
   try {

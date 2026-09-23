@@ -18,7 +18,7 @@ import HGripIcon from '@mui/icons-material/DragIndicatorRounded';
 import FileIcon from '@mui/icons-material/DataObjectRounded';
 import SchemaIcon from '@mui/icons-material/TableChartRounded';
 import ProblemIcon from '@mui/icons-material/SubjectRounded';
-import { loadProblemDetails, loadPublicTestCases, runSQLQuery, submitSQLQuery, getJobResult } from '../../api/databaseApi';
+import { loadProblemDetails, runSQLQuery, submitSQLQuery, getJobResult } from '../../api/databaseApi';
 import { SQLTestComparison } from '../../components/judge';
 
 const DIFFICULTY_COLOR = { easy: 'success', medium: 'warning', hard: 'error' };
@@ -383,10 +383,6 @@ export default function ProblemSolver() {
   const [running,    setRunning]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Test cases (fed into the left panel; each TC carries its own expectedOutput)
-  const [testCases, setTestCases] = useState([]);
-  const [tcLoading, setTcLoading] = useState(false);
-
   // Split sizes
   const [leftWidth,    setLeftWidth]    = useState(40);
   const [bottomHeight, setBottomHeight] = useState(35);
@@ -400,11 +396,6 @@ export default function ProblemSolver() {
     loadProblemDetails(problemId).then((res) => {
       if (res.success) setProblem(res.data);
       setLoading(false);
-    });
-    setTcLoading(true);
-    loadPublicTestCases(problemId).then((tcRes) => {
-      setTestCases(tcRes.success ? (tcRes.data || []) : []);
-      setTcLoading(false);
     });
   }, [problemId]);
 
@@ -548,8 +539,8 @@ export default function ProblemSolver() {
           <ProblemPanel
             problem={problem}
             loading={loading}
-            testCases={testCases}
-            tcLoading={tcLoading}
+            testCases={problem?.testCases || []}
+            tcLoading={loading}
           />
         </Box>
       </Box>

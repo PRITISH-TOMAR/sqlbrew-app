@@ -229,9 +229,9 @@ function SingleTestComparison({ tc }) {
     );
   }
 
-  const columns      = tc.expectedOutput?.columns || tc.userOutput?.columns || [];
+  const expectedCols = tc.expectedOutput?.columns || [];
+  const actualCols   = tc.userOutput?.columns     || expectedCols;
   const expectedRows = tc.expectedOutput?.rows    || [];
-  // When passed, mirror expected in the actual panel — they match by definition
   const actualRows   = tc.passed ? expectedRows : (tc.userOutput?.rows || []);
   const indicators   = buildIndicators(actualRows, expectedRows);
 
@@ -240,14 +240,14 @@ function SingleTestComparison({ tc }) {
       <OutputPanel
         title="Expected Output"
         icon={<TableRowsRoundedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
-        columns={columns}
+        columns={expectedCols}
         rows={expectedRows}
         indicators={null}
       />
       <OutputPanel
         title="Actual Output"
         icon={<GridOnRoundedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
-        columns={columns}
+        columns={actualCols}
         rows={actualRows}
         indicators={indicators}
       />
