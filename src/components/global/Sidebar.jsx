@@ -10,6 +10,7 @@ import VectorIcon from '@mui/icons-material/BlurOnOutlined';
 import ProgressIcon from '@mui/icons-material/TrendingUpOutlined';
 import ContestsIcon from '@mui/icons-material/EmojiEventsOutlined';
 import ResourcesIcon from '@mui/icons-material/MenuBookOutlined';
+import AdminIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
@@ -154,6 +155,8 @@ function NavItem({ item, drawerOpen }) {
 
 function DrawerContent({ open }) {
   const configModules = useSelector((s) => s.config.data?.modules);
+  const role          = useSelector((s) => s.config.data?.role);
+  const isAdmin       = role === 'ADMIN' || role === 'SUPERADMIN';
 
   // Build Dashboard children from config — locked modules get a lock icon
   const dashboardChildren = MODULE_ITEMS.map((m) => {
@@ -174,6 +177,7 @@ function DrawerContent({ open }) {
       children: dashboardChildren,
     },
     ...STATIC_NAV_ITEMS,
+    ...(isAdmin ? [{ label: 'Admin Portal', icon: <AdminIcon />, path: '/admin' }] : []),
   ];
 
   return (

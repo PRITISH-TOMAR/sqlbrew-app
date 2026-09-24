@@ -19,6 +19,7 @@ import { loadSQLDatasets, loadNoSQLDatasets, loadVectorDBDatasets } from './api/
 import SQLProblemset  from './pages/problemset/SQLProblemset.jsx';
 import ProblemSolver  from './pages/problemset/ProblemSolver.jsx';
 import UserProfile    from './pages/profile/UserProfile.jsx';
+import AdminPortal    from './pages/admin/AdminPortal.jsx';
 
 // ─── SQL — Blue ──────────────────────────────────────────────────────────────
 const SQL_COLOR    = '#2563eb';
@@ -116,6 +117,9 @@ export default function Routing() {
 
         {/* User Profile */}
         <Route path="/master/:userId" element={<UserProfile />} />
+
+        {/* Admin Portal */}
+        <Route path="/admin" element={<AdminPortal />} />
 
         {/* NoSQL */}
         <Route element={<ModuleGuard moduleKey="NOSQL" />}>
