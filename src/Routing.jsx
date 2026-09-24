@@ -1,5 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import LockIcon from '@mui/icons-material/LockOutlined';
 import PracticeIcon from '@mui/icons-material/MenuBookOutlined';
 import StructuredIcon from '@mui/icons-material/BarChartOutlined';
 import TrophyIcon from '@mui/icons-material/EmojiEventsOutlined';
@@ -49,6 +51,35 @@ function ProtectedRoute() {
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
+function ModuleGuard({ moduleKey }) {
+  const { data, loading } = useSelector((s) => s.config);
+
+  if (loading || !data) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
+
+  const module = data.modules?.find((m) => m.key === moduleKey);
+  if (!module || !module.enabled) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 2 }}>
+        <LockIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+        <Typography variant="h6" color="text.secondary">
+          {moduleKey} module is not enabled for your account
+        </Typography>
+        <Typography variant="body2" color="text.disabled">
+          Contact your admin or upgrade your plan to gain access.
+        </Typography>
+      </Box>
+    );
+  }
+
+  return <Outlet />;
+}
+
 export default function Routing() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
 
@@ -63,60 +94,66 @@ export default function Routing() {
       <Route element={<ProtectedRoute />}>
 
         {/* SQL */}
-        <Route path="/sql" element={
-          <DatasetGrid
-            fetchFn={loadSQLDatasets}
-            basePath="/sql"
-            accentColor={SQL_COLOR}
-            badge="LEARN • PRACTICE • GROW"
-            title="Database"
-            titleHighlight="Learning Paths"
-            subtitle="Explore our comprehensive database courses and challenges"
-            features={SQL_FEATURES}
-            pageKey="sql"
-            cardLabel="Dataset"
-            ctaLabel="Start Learning"
-          />
-        } />
-        <Route path="/sql/:dbId"            element={<SQLProblemset />} />
-        <Route path="/sql/:dbId/:problemId" element={<ProblemSolver />} />
+        <Route element={<ModuleGuard moduleKey="SQL" />}>
+          <Route path="/sql" element={
+            <DatasetGrid
+              fetchFn={loadSQLDatasets}
+              basePath="/sql"
+              accentColor={SQL_COLOR}
+              badge="LEARN • PRACTICE • GROW"
+              title="Database"
+              titleHighlight="Learning Paths"
+              subtitle="Explore our comprehensive database courses and challenges"
+              features={SQL_FEATURES}
+              pageKey="sql"
+              cardLabel="Dataset"
+              ctaLabel="Start Learning"
+            />
+          } />
+          <Route path="/sql/:dbId"            element={<SQLProblemset />} />
+          <Route path="/sql/:dbId/:problemId" element={<ProblemSolver />} />
+        </Route>
 
         {/* User Profile */}
         <Route path="/master/:userId" element={<UserProfile />} />
 
         {/* NoSQL */}
-        <Route path="/nosql" element={
-          <DatasetGrid
-            fetchFn={loadNoSQLDatasets}
-            basePath="/nosql"
-            accentColor={NOSQL_COLOR}
-            badge="DOCUMENTS • KEY-VALUE • GRAPHS"
-            title="NoSQL"
-            titleHighlight="Collections"
-            subtitle="Master non-relational databases with real-world document and graph datasets"
-            features={NOSQL_FEATURES}
-            pageKey="nosql"
-            cardLabel="Collection"
-            ctaLabel="Explore Collection"
-          />
-        } />
+        <Route element={<ModuleGuard moduleKey="NOSQL" />}>
+          <Route path="/nosql" element={
+            <DatasetGrid
+              fetchFn={loadNoSQLDatasets}
+              basePath="/nosql"
+              accentColor={NOSQL_COLOR}
+              badge="DOCUMENTS • KEY-VALUE • GRAPHS"
+              title="NoSQL"
+              titleHighlight="Collections"
+              subtitle="Master non-relational databases with real-world document and graph datasets"
+              features={NOSQL_FEATURES}
+              pageKey="nosql"
+              cardLabel="Collection"
+              ctaLabel="Explore Collection"
+            />
+          } />
+        </Route>
 
         {/* VectorDB */}
-        <Route path="/vectordb" element={
-          <DatasetGrid
-            fetchFn={loadVectorDBDatasets}
-            basePath="/vectordb"
-            accentColor={VECTORDB_COLOR}
-            badge="EMBEDDINGS • SEARCH • AI"
-            title="Vector"
-            titleHighlight="Databases"
-            subtitle="Learn vector search and semantic similarity with AI-powered dataset challenges"
-            features={VECTORDB_FEATURES}
-            pageKey="vectordb"
-            cardLabel="Index"
-            ctaLabel="Start Searching"
-          />
-        } />
+        <Route element={<ModuleGuard moduleKey="VECTORDB" />}>
+          <Route path="/vectordb" element={
+            <DatasetGrid
+              fetchFn={loadVectorDBDatasets}
+              basePath="/vectordb"
+              accentColor={VECTORDB_COLOR}
+              badge="EMBEDDINGS • SEARCH • AI"
+              title="Vector"
+              titleHighlight="Databases"
+              subtitle="Learn vector search and semantic similarity with AI-powered dataset challenges"
+              features={VECTORDB_FEATURES}
+              pageKey="vectordb"
+              cardLabel="Index"
+              ctaLabel="Start Searching"
+            />
+          } />
+        </Route>
 
       </Route>
 

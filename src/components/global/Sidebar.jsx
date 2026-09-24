@@ -15,20 +15,18 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import LockIcon from '@mui/icons-material/LockOutlined';
 import { useSidebar } from '../../context/SidebarContext.jsx';
 import { APP_BAR_HEIGHT, DRAWER_WIDTH, ICON_DRAWER_WIDTH } from '../../config/layout.js';
 
-const NAV_ITEMS = [
-  {
-    label: 'Dashboard',
-    icon: <DashboardIcon />,
-    path: '/',
-    children: [
-      { label: 'SQL',             icon: <StorageIcon />, path: '/sql' },
-      { label: 'NoSQL',           icon: <NoSQLIcon />,   path: '/nosql' },
-      { label: 'Vector Database', icon: <VectorIcon />,  path: '/vector-database' },
-    ],
-  },
+// moduleKey matches what the backend returns (SQL | NOSQL | VECTORDB)
+const MODULE_ITEMS = [
+  { label: 'SQL',             icon: <StorageIcon />, path: '/sql',      moduleKey: 'SQL'      },
+  { label: 'NoSQL',           icon: <NoSQLIcon />,   path: '/nosql',    moduleKey: 'NOSQL'    },
+  { label: 'Vector Database', icon: <VectorIcon />,  path: '/vectordb', moduleKey: 'VECTORDB' },
+];
+
+const STATIC_NAV_ITEMS = [
   {
     label: 'Resources',
     icon: <ResourcesIcon />,
@@ -122,14 +120,19 @@ function NavItem({ item, drawerOpen }) {
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <List disablePadding>
             {item.children.map((child) => {
-              const childSelected = child.path === '/'
+              const childSelected = !child.locked && (child.path === '/'
                 ? pathname === '/'
-                : pathname.startsWith(child.path);
+                : pathname.startsWith(child.path));
               return (
                 <ListItemButton
                   key={child.path}
                   selected={childSelected}
-                  onClick={() => { navigate(child.path); if (!isLg) close(); }}
+                  disabled={child.locked}
+                  onClick={() => {
+                    if (child.locked) return;
+                    navigate(child.path);
+                    if (!isLg) close();
+                  }}
                   sx={{ minHeight: 44, pl: 6, pr: 3, py: 0.75, borderRadius: 1, mx: 0.5 }}
                 >
                   <ListItemIcon sx={{ minWidth: 28, fontSize: 16, color: childSelected ? 'primary.main' : 'inherit' }}>
@@ -150,21 +153,34 @@ function NavItem({ item, drawerOpen }) {
 }
 
 function DrawerContent({ open }) {
-  const user = useSelector((s) => s.auth.user);
+  const configModules = useSelector((s) => s.config.data?.modules);
 
-  // Resolve dynamic paths (e.g. Profile → /master/:userId)
-  const resolvedItems = NAV_ITEMS.map((item) =>
-    item.dynamic && user?.id
-      ? { ...item, path: `${item.path}/${user.id}` }
-      : item
-  );
+  // Build Dashboard children from config — locked modules get a lock icon
+  const dashboardChildren = MODULE_ITEMS.map((m) => {
+    const configEntry = configModules?.find((c) => c.key === m.moduleKey);
+    const enabled = configEntry?.enabled ?? false;
+    return {
+      ...m,
+      locked: !enabled,
+      icon: enabled ? m.icon : <LockIcon sx={{ fontSize: 18 }} />,
+    };
+  });
+
+  const navItems = [
+    {
+      label: 'Dashboard',
+      icon: <DashboardIcon />,
+      path: '/',
+      children: dashboardChildren,
+    },
+    ...STATIC_NAV_ITEMS,
+  ];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 2 }}>
-      {/* Nav list */}
       <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mt: 0.5 }}>
         <List disablePadding>
-          {resolvedItems.map((item) => (
+          {navItems.map((item) => (
             <NavItem key={item.label} item={item} drawerOpen={open} />
           ))}
         </List>
