@@ -9,6 +9,7 @@ import Topbar  from './components/global/Topbar.jsx';
 import Sidebar from './components/global/Sidebar.jsx';
 import Routing from './Routing.jsx';
 import ResetPassword from './components/auth/ResetPassword.jsx';
+import ApiErrorBanner from './components/global/ApiErrorBanner.jsx';
 
 import { APP_BAR_HEIGHT, isFocusRoute } from './config/layout.js';
 
@@ -52,6 +53,8 @@ function Layout() {
       >
         <Routing />
       </Box>
+
+      <ApiErrorBanner />
     </Box>
   );
 }
