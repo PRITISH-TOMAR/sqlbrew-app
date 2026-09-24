@@ -4,6 +4,7 @@
 import { store } from '../redux/store';
 import { ApiResponse } from '../utils/classes/ApiResponse';
 import { setLoading, setUser, logout } from '../redux/slices/authSlice';
+import { fetchUserConfig } from './configApi';
 import api from "./globalApi"
 
 // UTILITIES
@@ -20,6 +21,7 @@ export const loginUser = async (payload) => {
     if (response.status == 200) {
       const { user, tokenDetails } = response.data.data;
       store.dispatch(setUser({ user, tokenDetails }));
+      await fetchUserConfig();
       toast.success(response.data.message);
       return ApiResponse.success(response.data.message, response.data.data);
     }
@@ -142,6 +144,7 @@ export const logoutUser = async () => {
     // best-effort — clear local state regardless of API result
   }
   store.dispatch(logout());
+  store.dispatch({ type: 'config/clearConfig' });
   toast.success('Logged out successfully');
 };
 
