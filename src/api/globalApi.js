@@ -6,6 +6,7 @@ import { recordApiFailure, recordApiSuccess } from '../redux/slices/apiErrorSlic
 const MAX_RETRIES = 3;
 
 const shouldRetry = (error) => {
+  if (error.config?._skipRetry) return false;
   if (!error.response) return true; // network / timeout
   return error.response.status >= 500;  // server errors
 };

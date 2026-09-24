@@ -11,7 +11,7 @@ export const fetchUserConfig = async () => {
 
   store.dispatch(setConfigLoading());
   try {
-    const response = await api.get('/config');
+    const response = await api.get('/config', { _skipRetry: true });
     if (response.status === 200) {
       store.dispatch(setConfig(response.data.data));
       return ApiResponse.success(response.data.message, response.data.data);

@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, CircularProgress, LinearProgress } from '@mui/material';
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -32,9 +32,16 @@ export default function Layout() {
     return <ConfigFailedScreen />;
   }
 
-  // Config not yet resolved — render nothing until it's ready
+  // Config not yet resolved — show spinner in center + loading bar at bottom
   if (isAuthenticated && !configLoaded) {
-    return null;
+    return (
+      <Box sx={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <LinearProgress />
+        </Box>
+      </Box>
+    );
   }
 
   return (
