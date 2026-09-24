@@ -38,9 +38,6 @@ function UploadField({ label, accept = 'image/*', onUpload, loading }) {
 }
 
 export default function AssetsTab() {
-  const adminScope    = useSelector((s) => s.config.data?.adminScope);
-  const requesterRole = useSelector((s) => s.config.data?.role);
-
   const [datasetId,    setDatasetId]    = useState('');
   const [pageKey,      setPageKey]      = useState('sql');
   const [statusMap,    setStatusMap]    = useState({}); // key → { loading, message, error }
@@ -69,14 +66,8 @@ export default function AssetsTab() {
     }
   };
 
-  // Determine which page keys the admin can manage (based on adminScope with WRITE)
-  const allowedPageKeys = requesterRole === 'SUPERADMIN'
-    ? PAGE_KEYS
-    : PAGE_KEYS.filter((pk) => {
-        const moduleKey = pk.toUpperCase().replace('VECTORDB', 'VECTORDB');
-        const scope = adminScope?.find((s) => s.moduleKey === moduleKey);
-        return scope?.grantableOperations?.includes('WRITE');
-      });
+  // Any ADMIN+ can upload assets for all modules — scope only governs permission grants to users
+  const allowedPageKeys = PAGE_KEYS;
 
   return (
     <Box>
