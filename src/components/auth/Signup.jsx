@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import {
   Stack, TextField, Typography, Button, Link, InputAdornment,
-  IconButton, CircularProgress, Divider, Box,
+  IconButton, CircularProgress, Box,
 } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import LockIcon from '@mui/icons-material/LockOutlined';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { sendOtpToMail, signupUser, loginUser } from '../../api/authApi';
+import { sendVerificationLink, signupUser, loginUser } from '../../api/authApi';
 import { CountryCodeDropdown } from '../../utils/classes/CountryCodeDropDown.jsx';
-import { PasswordStrengthBar }  from '../../utils/helpers/PasswordStrengthBar.jsx';
-import Otp from './OTP.jsx';
+import { PasswordStrengthBar } from '../../utils/helpers/PasswordStrengthBar.jsx';
 
 const validateEmail = (email) => {
   const ok = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
@@ -27,29 +28,27 @@ const validateForm = (formData) => {
   return true;
 };
 
-export default function Signup({ onSwitchToLogin }) {
+export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloadedEmailKey = null }) {
   const loading  = useSelector((s) => s.auth.loading);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', countryCode: '+91',
-    contact: '', email: '', password: '', confirmPassword: '',
+    contact: '', email: preloadedEmail, password: '', confirmPassword: '',
   });
-  const [emailKey,    setEmailKey]    = useState({});
-  const [showOtp,     setShowOtp]     = useState(false);
-  const [verified,    setVerified]    = useState(false);
-  const [otpLoading,  setOtpLoading]  = useState(false);
+  const [emailKey,    setEmailKey]    = useState(preloadedEmailKey ?? {});
+  const [verified,    setVerified]    = useState(!!preloadedEmailKey);
+  const [linkSending, setLinkSending] = useState(false);
   const [showPw,      setShowPw]      = useState(false);
 
   const set = (field, value) => setFormData((p) => ({ ...p, [field]: value }));
 
-  const handleSendOtp = async (e) => {
+  const handleSendLink = async (e) => {
     e.preventDefault();
     if (!validateEmail(formData.email)) return;
-    setOtpLoading(true);
-    const res = await sendOtpToMail(formData.email);
-    if (res.success) setShowOtp(true);
-    setOtpLoading(false);
+    setLinkSending(true);
+    await sendVerificationLink(formData.email);
+    setLinkSending(false);
   };
 
   const handleSubmit = async (e) => {
@@ -59,59 +58,71 @@ export default function Signup({ onSwitchToLogin }) {
     const res = await signupUser(payload);
     if (res.success) {
       const loginRes = await loginUser({ email: formData.email, password: formData.password, rememberMe: false });
-      if (loginRes.success) navigate('/');
+      if (loginRes.success) navigate('/', { replace: true });
     }
   };
 
   return (
-    <>
-      {showOtp && (
-        <Otp
-          setShowOtp={setShowOtp}
-          email={formData.email}
-          showOtp={showOtp}
-          setVerified={setVerified}
-          setEmailKey={setEmailKey}
+    <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
+      <Box>
+        <Typography variant="h4" fontWeight={600}>Sign up</Typography>
+        <Typography variant="body2" color="text.secondary" mt={0.5}>
+          Create your account to get started
+        </Typography>
+      </Box>
+
+      <Stack direction="row" spacing={1.5}>
+        <TextField label="First Name" size="small" fullWidth value={formData.firstName}
+          onChange={(e) => set('firstName', e.target.value)} required />
+        <TextField label="Last Name"  size="small" fullWidth value={formData.lastName}
+          onChange={(e) => set('lastName',  e.target.value)} required />
+      </Stack>
+
+      {/* Phone */}
+      <Stack direction="row" spacing={0}>
+        <CountryCodeDropdown
+          value={formData.countryCode}
+          onChange={(v) => set('countryCode', v)}
         />
-      )}
+        <TextField
+          label="Phone Number"
+          type="tel"
+          size="small"
+          fullWidth
+          value={formData.contact}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '');
+            if (v.length <= 10) set('contact', v);
+          }}
+          required
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0 4px 4px 0' } }}
+        />
+      </Stack>
 
-      <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
-        <Box>
-          <Typography variant="h4" fontWeight={600}>Sign up</Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            Create your account to get started
+      {/* Email + verify */}
+      {verified ? (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{
+            px: 1.5,
+            py: 1,
+            border: '1px solid',
+            borderColor: 'success.main',
+            borderRadius: 1,
+            bgcolor: 'rgba(46, 125, 50, 0.08)',
+          }}
+        >
+          <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+          <Typography variant="body2" color="text.primary" sx={{ flex: 1, fontWeight: 500 }}>
+            {formData.email}
           </Typography>
-        </Box>
-
-        <Stack direction="row" spacing={1.5}>
-          <TextField label="First Name" size="small" fullWidth value={formData.firstName}
-            onChange={(e) => set('firstName', e.target.value)} required />
-          <TextField label="Last Name"  size="small" fullWidth value={formData.lastName}
-            onChange={(e) => set('lastName',  e.target.value)} required />
+          <Typography variant="caption" color="success.main" sx={{ fontWeight: 600 }}>
+            Verified
+          </Typography>
         </Stack>
-
-        {/* Phone */}
-        <Stack direction="row" spacing={0}>
-          <CountryCodeDropdown
-            value={formData.countryCode}
-            onChange={(v) => set('countryCode', v)}
-          />
-          <TextField
-            label="Phone Number"
-            type="tel"
-            size="small"
-            fullWidth
-            value={formData.contact}
-            onChange={(e) => {
-              const v = e.target.value.replace(/\D/g, '');
-              if (v.length <= 10) set('contact', v);
-            }}
-            required
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0 4px 4px 0' } }}
-          />
-        </Stack>
-
-        {/* Email + verify */}
+      ) : (
         <TextField
           label="Email"
           type="email"
@@ -126,69 +137,71 @@ export default function Signup({ onSwitchToLogin }) {
                 <Button
                   size="small"
                   variant="contained"
-                  onClick={handleSendOtp}
-                  disabled={verified || otpLoading}
+                  onClick={handleSendLink}
+                  disabled={linkSending}
                   sx={{ minWidth: 70, height: 28, fontSize: '0.75rem' }}
                 >
-                  {verified ? <LockIcon fontSize="small" /> : otpLoading ? <CircularProgress size={14} color="inherit" /> : 'Verify'}
+                  {linkSending
+                    ? <CircularProgress size={14} color="inherit" />
+                    : <MailOutlineIcon fontSize="small" />}
                 </Button>
               </InputAdornment>
             ),
           }}
         />
+      )}
 
-        {/* Password */}
-        <Box>
-          <TextField
-            label="Password"
-            type={showPw ? 'text' : 'password'}
-            size="small"
-            fullWidth
-            value={formData.password}
-            onChange={(e) => set('password', e.target.value)}
-            inputProps={{ minLength: 8 }}
-            required
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setShowPw((v) => !v)}>
-                    {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <PasswordStrengthBar password={formData.password} />
-        </Box>
-
+      {/* Password */}
+      <Box>
         <TextField
-          label="Confirm Password"
-          type="password"
+          label="Password"
+          type={showPw ? 'text' : 'password'}
           size="small"
           fullWidth
-          value={formData.confirmPassword}
-          onChange={(e) => set('confirmPassword', e.target.value)}
+          value={formData.password}
+          onChange={(e) => set('password', e.target.value)}
+          inputProps={{ minLength: 8 }}
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setShowPw((v) => !v)}>
+                  {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
+        <PasswordStrengthBar password={formData.password} />
+      </Box>
 
-        <Button
-          type="submit"
-          variant="contained"
-          fullWidth
-          size="large"
-          disabled={!verified || loading}
-          sx={{ mt: 1 }}
-        >
-          {loading ? <CircularProgress size={20} color="inherit" /> : 'Create Account'}
-        </Button>
+      <TextField
+        label="Confirm Password"
+        type="password"
+        size="small"
+        fullWidth
+        value={formData.confirmPassword}
+        onChange={(e) => set('confirmPassword', e.target.value)}
+        required
+      />
 
-        <Typography variant="body2" align="center" color="text.secondary">
-          Already have an account?{' '}
-          <Link component="button" type="button" variant="body2" onClick={onSwitchToLogin} underline="hover">
-            Sign in
-          </Link>
-        </Typography>
-      </Stack>
-    </>
+      <Button
+        type="submit"
+        variant="contained"
+        fullWidth
+        size="large"
+        disabled={!verified || loading}
+        sx={{ mt: 1 }}
+      >
+        {loading ? <CircularProgress size={20} color="inherit" /> : 'Create Account'}
+      </Button>
+
+      <Typography variant="body2" align="center" color="text.secondary">
+        Already have an account?{' '}
+        <Link component="button" type="button" variant="body2" onClick={onSwitchToLogin} underline="hover">
+          Sign in
+        </Link>
+      </Typography>
+    </Stack>
   );
 }

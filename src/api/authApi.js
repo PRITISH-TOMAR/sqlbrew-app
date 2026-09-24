@@ -61,19 +61,17 @@ export const signupUser = async (payload) => {
   }
 };
 
-export const sendOtpToMail = async (payload) => {
+export const sendVerificationLink = async (email) => {
   try {
-    const url = `/auth/send?email=${payload}`;
+    const url = `/auth/send?email=${email}`;
     const response = await api.get(url);
-    console.log(response);
     if (response.status == 200) {
-      toast.success(response.data.message || 'OTP sent successfully');
+      toast.success(response.data.message || 'Verification link sent');
       return ApiResponse.success(response.data.message, response.data.data);
     }
     else {
       toast.error(response.data.message);
       return ApiResponse.error(response.data.message, response.data.data);
-
     }
   } catch (error) {
     toast.error(error.response?.data.message || DEFAULT_ERROR_MESSAGE);
@@ -81,11 +79,10 @@ export const sendOtpToMail = async (payload) => {
   }
 };
 
-export const verifyEmail = async (payload) => {
+export const verifyEmailLink = async (token) => {
   try {
-    const url = `/auth/verify`;
-    const response = await api.post(url, payload);
-    console.log(response);
+    const url = `/auth/verify?token=${token}`;
+    const response = await api.get(url);
     if (response.status == 200) {
       toast.success(response.data.message);
       return ApiResponse.success(response.data.message, response.data.data);
@@ -95,7 +92,7 @@ export const verifyEmail = async (payload) => {
       return ApiResponse.error(response.data.message, response.data.data);
     }
   } catch (error) {
-    toast.error(error.response?.data.message);
+    toast.error(error.response?.data?.message || DEFAULT_ERROR_MESSAGE);
     return ApiResponse.error(error.message);
   }
 };

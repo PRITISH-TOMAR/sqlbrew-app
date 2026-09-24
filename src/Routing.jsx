@@ -10,6 +10,7 @@ import BoltIcon from '@mui/icons-material/BoltOutlined';
 import EmbeddingIcon from '@mui/icons-material/ScatterPlotOutlined';
 import TuneIcon from '@mui/icons-material/TuneOutlined';
 import AuthContainer  from './pages/authentication/AuthContainer.jsx';
+import VerifyEmail    from './pages/authentication/VerifyEmail.jsx';
 import Dashboard      from './pages/Dashboard.jsx';
 import DatasetGrid    from './components/databases/DatabaseGrid.jsx';
 import { loadSQLDatasets, loadNoSQLDatasets, loadVectorDBDatasets } from './api/databaseApi.js';
@@ -54,8 +55,9 @@ export default function Routing() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/"      element={<Dashboard />} />
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <AuthContainer />} />
+      <Route path="/"             element={<Dashboard />} />
+      <Route path="/login"        element={isAuthenticated ? <Navigate to="/" replace /> : <AuthContainer />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
