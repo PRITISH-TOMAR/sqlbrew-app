@@ -3,9 +3,10 @@ import { Navigate } from 'react-router-dom';
 import { Box, Tab, Tabs, Typography } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import { useSelector } from 'react-redux';
-import UsersTab  from '../../components/admin/UsersTab.jsx';
-import AssetsTab from '../../components/admin/AssetsTab.jsx';
-import ScopesTab from '../../components/admin/ScopesTab.jsx';
+import UsersTab   from '../../components/admin/UsersTab.jsx';
+import AssetsTab  from '../../components/admin/AssetsTab.jsx';
+import ScopesTab  from '../../components/admin/ScopesTab.jsx';
+import ContentTab from '../../components/admin/ContentTab.jsx';
 
 export default function AdminPortal() {
   const role = useSelector((s) => s.config.data?.role);
@@ -38,12 +39,14 @@ export default function AdminPortal() {
       >
         <Tab label="Users" />
         <Tab label="Assets" />
+        <Tab label="Content" />
         {isSuperAdmin && <Tab label="Scopes" />}
       </Tabs>
 
       {tab === 0 && <UsersTab />}
       {tab === 1 && <AssetsTab />}
-      {tab === 2 && isSuperAdmin && <ScopesTab />}
+      {tab === 2 && <ContentTab />}
+      {tab === 3 && isSuperAdmin && <ScopesTab />}
     </Box>
   );
 }

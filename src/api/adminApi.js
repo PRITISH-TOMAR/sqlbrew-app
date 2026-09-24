@@ -76,3 +76,101 @@ export const setAdminScope = async (adminId, moduleKey, grantableOps) => {
     return ApiResponse.error(error.response?.data?.message || DEFAULT_ERROR);
   }
 };
+
+// ── Content management ────────────────────────────────────────────────────────
+
+export const adminCreateDataset = async (data) => {
+  try {
+    const res = await api.post('/admin/content/dataset', data);
+    if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminUpdateDataset = async (id, data) => {
+  try {
+    const res = await api.put(`/admin/content/dataset/${id}`, data);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminDeleteDataset = async (id) => {
+  try {
+    const res = await api.delete(`/admin/content/dataset/${id}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminCreateQuestion = async (data) => {
+  try {
+    const res = await api.post('/admin/content/question', data);
+    if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminUpdateQuestion = async (id, data) => {
+  try {
+    const res = await api.put(`/admin/content/question/${id}`, data);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminDeleteQuestion = async (id) => {
+  try {
+    const res = await api.delete(`/admin/content/question/${id}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminCreateTestCase = async (data) => {
+  try {
+    const res = await api.post('/admin/content/testcase', data);
+    if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminUpdateTestCase = async (id, data) => {
+  try {
+    const res = await api.put(`/admin/content/testcase/${id}`, data);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminDeleteTestCase = async (id) => {
+  try {
+    const res = await api.delete(`/admin/content/testcase/${id}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminCreateSolution = async (data) => {
+  try {
+    const res = await api.post('/admin/content/solution', data);
+    if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminUpdateSolution = async (id, data) => {
+  try {
+    const res = await api.put(`/admin/content/solution/${id}`, data);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminDeleteSolution = async (id) => {
+  try {
+    const res = await api.delete(`/admin/content/solution/${id}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
