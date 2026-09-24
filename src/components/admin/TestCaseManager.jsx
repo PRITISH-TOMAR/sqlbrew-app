@@ -4,23 +4,9 @@ import {
   TextField, Typography, Alert, CircularProgress, Paper, Chip, Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
-import { adminCreateTestCase, adminUpdateTestCase, adminDeleteTestCase } from '../../api/adminApi.js';
-import api from '../../api/globalApi.js';
-import { ApiResponse } from '../../utils/classes/ApiResponse.js';
+import { adminCreateTestCase, adminUpdateTestCase, adminDeleteTestCase, adminGetTestCaseByQuestion } from '../../api/adminApi.js';
 
 const EMPTY_FORM = { questionId: '', type: '', expectedSql: '', testCases: '[]' };
-
-const loadTestCase = async (questionId) => {
-  try {
-    // reuse the public endpoint that returns the testcase group for a question
-    const res = await api.get(`/db/sql/problem/${questionId}/testcases`).catch(() => null);
-    // fallback: try the judge endpoint path if above not available
-    if (res && res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
-    return ApiResponse.error('Not found or no endpoint');
-  } catch (e) {
-    return ApiResponse.error(e.response?.data?.message || 'Failed to load');
-  }
-};
 
 export default function TestCaseManager() {
   const [questionIdInput, setQuestionIdInput] = useState('');
@@ -43,7 +29,7 @@ export default function TestCaseManager() {
     setLoadBusy(true);
     setLoadError(null);
     setCurrent(null);
-    const res = await loadTestCase(questionIdInput.trim());
+    const res = await adminGetTestCaseByQuestion(questionIdInput.trim());
     setLoadBusy(false);
     if (res.isSuccess()) setCurrent(res.getData());
     else setLoadError(res.message);

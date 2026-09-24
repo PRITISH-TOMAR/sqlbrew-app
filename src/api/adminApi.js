@@ -77,6 +77,24 @@ export const setAdminScope = async (adminId, moduleKey, grantableOps) => {
   }
 };
 
+// ── Content reads ─────────────────────────────────────────────────────────────
+
+export const adminGetTestCaseByQuestion = async (questionId) => {
+  try {
+    const res = await api.get(`/admin/content/testcase/by-question/${questionId}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminGetSolutionsByQuestion = async (questionId) => {
+  try {
+    const res = await api.get(`/admin/content/solution/by-question/${questionId}`);
+    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
 // ── Content management ────────────────────────────────────────────────────────
 
 export const adminCreateDataset = async (data) => {

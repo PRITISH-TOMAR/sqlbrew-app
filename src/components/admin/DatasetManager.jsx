@@ -41,7 +41,7 @@ export default function DatasetManager() {
     setError(null);
     loadSQLDatasets({ page: 0, size: 200 }).then((res) => {
       setLoading(false);
-      if (res.isSuccess()) setDatasets(res.getData()?.content ?? []);
+      if (res.isSuccess()) setDatasets(res.getData()?.items ?? []);
       else setError(res.message);
     });
   };

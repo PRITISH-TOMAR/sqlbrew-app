@@ -8,21 +8,9 @@ import SearchIcon from '@mui/icons-material/SearchOutlined';
 import EditIcon   from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import AddIcon    from '@mui/icons-material/AddOutlined';
-import { adminCreateSolution, adminUpdateSolution, adminDeleteSolution } from '../../api/adminApi.js';
-import api from '../../api/globalApi.js';
-import { ApiResponse } from '../../utils/classes/ApiResponse.js';
+import { adminCreateSolution, adminUpdateSolution, adminDeleteSolution, adminGetSolutionsByQuestion } from '../../api/adminApi.js';
 
 const EMPTY_FORM = { questionId: '', datasetId: '', sqlMode: '', solutions: '[]' };
-
-const loadSolutions = async (questionId) => {
-  try {
-    const res = await api.get(`/db/sql/problem/${questionId}/expected`);
-    if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
-    return ApiResponse.error(res.data.message);
-  } catch (e) {
-    return ApiResponse.error(e.response?.data?.message || 'Failed to load');
-  }
-};
 
 export default function SolutionManager() {
   const [questionIdInput, setQuestionIdInput] = useState('');
@@ -45,7 +33,7 @@ export default function SolutionManager() {
     setLoadBusy(true);
     setLoadError(null);
     setSolutions([]);
-    const res = await loadSolutions(questionIdInput.trim());
+    const res = await adminGetSolutionsByQuestion(questionIdInput.trim());
     setLoadBusy(false);
     if (res.isSuccess()) {
       const data = res.getData();
