@@ -1,190 +1,206 @@
-// REACT MODULES
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import {
+  Box, Paper, Stack, Typography, TextField, Button,
+  InputAdornment, IconButton, CircularProgress, useTheme,
+} from '@mui/material';
+import Visibility       from '@mui/icons-material/Visibility';
+import VisibilityOff    from '@mui/icons-material/VisibilityOff';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { pingResetPassword, resetPassword } from '../../api/authApi';
+import { PasswordStrengthBar } from '../../utils/helpers/PasswordStrengthBar.jsx';
+import LogoImage from '../global/LogoImage.jsx';
+import singupDark  from '../../assets/images/signup-dark.jpg';
+import signupLight from '../../assets/images/signup-light.jpg';
+import { APP_BAR_HEIGHT } from '../../config/layout.js';
+import toast from 'react-hot-toast';
 
-// IMPORTS
-import { PasswordStrengthBar } from "../../utils/helpers/PasswordStrengthBar";
-import { pingResetPassword, resetPassword } from "../../api/authApi";
-import { themeClasses } from "../../utils/classes/themeClasses";
-
-// UTILITIES
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import toast from "react-hot-toast";
-import { Spinner } from "@material-tailwind/react";
-import LogoImage from "../global/LogoImage";
-
-// FUNCTION : Form Data Validation
-const validateForm = (formData) => {
-  const emptyFields = Object.entries(formData).filter(([value]) => {
-    return value === null || value === undefined || value === "";
-  });
-  if (emptyFields.length > 0) {
-    const fieldNames = emptyFields.map(([key]) => key).join(", ");
-    toast.error(`Please fill in: ${fieldNames}`);
-    return false;
-  }
-  if (formData.password != formData.confirmPassword) {
-    toast.error(`Password and Confirm password do not match`);
-    return false;
-  }
-  return true;
-};
-
-// FUNCTION : RESET PASSWORD
 export default function ResetPassword() {
-  // INITIALIZE : HOOKS
   const { resetKey } = useParams();
-  const theme = useSelector((state) => state.theme);
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
+  const themeMode    = useSelector((s) => s.theme);
+  const theme        = useTheme();
 
-  // INITIALIZE : STATES
-  const [message, setMessage] = useState("");
-  const [formData, setFormData] = useState({
-    password: "",
-    confirmPassword: "",
-  });
-  const [loading, setLoading] = useState(true);
-  const [valid, setValid] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [status,      setStatus]      = useState('loading'); // 'loading' | 'valid' | 'expired' | 'done'
+  const [formData,    setFormData]    = useState({ password: '', confirmPassword: '' });
+  const [submitting,  setSubmitting]  = useState(false);
+  const [showPw,      setShowPw]      = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // USEFFECT : TO PING ON PAGE LOAD
   useEffect(() => {
-    const pingLink = async () => {
-      const res = await pingResetPassword(resetKey);
-      if (res.success) {
-        setValid(true);
-      }
-      else{
-        setValid(false);
-      }
-      setLoading(false);
-    };
-
-    if (resetKey) pingLink();
+    if (!resetKey) { setStatus('expired'); return; }
+    pingResetPassword(resetKey).then((res) => {
+      setStatus(res.success ? 'valid' : 'expired');
+    });
   }, [resetKey]);
 
-  // FUNCTION : CLEAR FORM DATA
-  const handleClearForm = () => {
-    setFormData((prev) =>
-      Object.fromEntries(Object.keys(prev).map((key) => [key, ""]))
-    );
-  };
+  const set = (field, value) => setFormData((p) => ({ ...p, [field]: value }));
 
-  // FUNCTION: HANDLE FORM SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm(formData)) return;
-    const payload = { password: formData.password, key: resetKey };
-    const res = await resetPassword(payload);
-    if (res.success) {
-      handleClearForm(formData);
-      navigate("/login");
-    } else {
-      setMessage(res.message);
-    }
+    if (!formData.password) { toast.error('Enter a password'); return; }
+    if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return; }
+    setSubmitting(true);
+    const res = await resetPassword({ password: formData.password, key: resetKey });
+    setSubmitting(false);
+    if (res.success) setStatus('done');
   };
 
-  // FUNCTION : HANDLE CHANGES IN FORM DATA
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  // ── Shared outer layout ───────────────────────────────────────────────────
+  const wrapInLayout = (content) => (
+    <Box sx={{ display: 'flex', height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, bgcolor: 'background.default' }}>
 
-  // FUNCTION :  TOGGLE PASSWORD EYE
-  const togglePassword = (e) => {
-    e.preventDefault();
-    setShowPassword((state) => !state);
-  };
+      {/* Form panel */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, p: { xs: 3, sm: 6 } }}>
+        <Box sx={{ width: '100%', maxWidth: 440 }}>
+          <LogoImage />
+        </Box>
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            maxWidth: 440,
+            p: { xs: 3, sm: 4 },
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 3,
+            boxShadow: theme.shadows[1],
+          }}
+        >
+          {content}
+        </Paper>
+      </Box>
 
-  return (
-    <div
-      className={`min-h-screen flex flex-col ${themeClasses[theme].bg} ${themeClasses[theme].text}`}
-    >
-     <LogoImage/>
+      {/* Image panel */}
+      <Box sx={{ display: { xs: 'none', md: 'block' }, flex: 1, p: 3 }}>
+        <Box sx={{ position: 'relative', width: '100%', height: '100%', borderRadius: 4, overflow: 'hidden' }}>
+          <Box
+            component="img"
+            src={themeMode === 'light' ? signupLight : singupDark}
+            alt="Auth visual"
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)' }} />
+          <Stack spacing={1} sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, p: 4, color: '#fff' }}>
+            <Typography variant="h4" fontWeight={600}>Master SQL, one query at a time</Typography>
+            <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 420 }}>
+              Practice real-world database problems, get instant feedback, and build the querying skills that employers look for.
+            </Typography>
+          </Stack>
+        </Box>
+      </Box>
 
-      {loading && (
-        <div className="flex flex-col items-center justify-center mt-10 text-lg">
-          <p>Checking link...</p>
-          <Spinner />
-        </div>
-      )}
+    </Box>
+  );
 
-      {/* INVALID / EXPIRED LINK */}
-      {!loading && !valid && (
-        <div className="flex flex-col items-center justify-center mt-10 text-lg text-red-500">
-          This page seems to move permanently. The link has expired.
-        </div>
-      )}
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (status === 'loading') {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, bgcolor: 'background.default' }}>
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress />
+          <Typography variant="body1" color="text.secondary">Checking reset link…</Typography>
+        </Stack>
+      </Box>
+    );
+  }
 
-      {!loading && valid && (
-        <>
-          <div className="flex justify-center mt-10 px-4 h-full">
-            <form
-              onSubmit={handleSubmit}
-              className={`w-full max-w-md p-6 shadow-lg rounded-lg border ${themeClasses[theme].reverseText} ${themeClasses[theme].reverseBg} flex flex-col gap-4 items-center`}
-            >
-              <h2 className="text-2xl font-semibold text-center mb-2">
-                Reset Your Password
-              </h2>
+  // ── Expired ───────────────────────────────────────────────────────────────
+  if (status === 'expired') {
+    return wrapInLayout(
+      <Stack alignItems="center" spacing={2} py={1}>
+        <ErrorOutlineIcon sx={{ fontSize: 56, color: 'error.main' }} />
+        <Typography variant="h5" fontWeight={600}>Link Expired</Typography>
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          This password reset link has expired or is invalid. Please request a new one.
+        </Typography>
+        <Button variant="outlined" fullWidth size="large" onClick={() => navigate('/login')}>
+          Back to Login
+        </Button>
+      </Stack>
+    );
+  }
 
-              <div className="w-full flex flex-col">
-                <div
-                  className={`flex items-center w-full bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].reverseBg}`}
-                >
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].reverseText}`}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
-                    minLength={8}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="mr-6"
-                    onClick={togglePassword}
-                  >
-                    {showPassword ? (
-                      <FaEye size={16} />
-                    ) : (
-                      <FaEyeSlash size={16} />
-                    )}
-                  </button>
-                </div>
-              </div>
+  // ── Done ──────────────────────────────────────────────────────────────────
+  if (status === 'done') {
+    return wrapInLayout(
+      <Stack alignItems="center" spacing={2} py={1}>
+        <CheckCircleOutlineIcon sx={{ fontSize: 56, color: 'success.main' }} />
+        <Typography variant="h5" fontWeight={600}>Password Reset!</Typography>
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          Your password has been updated successfully. You can now sign in with your new password.
+        </Typography>
+        <Button variant="contained" fullWidth size="large" onClick={() => navigate('/login')}>
+          Go to Login
+        </Button>
+      </Stack>
+    );
+  }
 
-              <div
-                className={`flex items-center w-full bg-transparent border h-12 rounded-full overflow-hidden gap-2 ${themeClasses[theme].border} ${themeClasses[theme].reverseBg}`}
-              >
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  className={`bg-transparent pl-6 placeholder-current outline-none text-sm w-full h-full ${themeClasses[theme].reverseText}`}
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    handleChange("confirmPassword", e.target.value)
-                  }
-                  required
-                />
-              </div>
+  // ── Valid form ────────────────────────────────────────────────────────────
+  return wrapInLayout(
+    <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
+      <Box>
+        <Typography variant="h4" fontWeight={600}>Reset Password</Typography>
+        <Typography variant="body2" color="text.secondary" mt={0.5}>
+          Enter your new password below
+        </Typography>
+      </Box>
 
-              <PasswordStrengthBar password={formData.password} />
+      <Box>
+        <TextField
+          label="New Password"
+          type={showPw ? 'text' : 'password'}
+          size="small"
+          fullWidth
+          value={formData.password}
+          onChange={(e) => set('password', e.target.value)}
+          inputProps={{ minLength: 8 }}
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setShowPw((v) => !v)}>
+                  {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <PasswordStrengthBar password={formData.password} />
+      </Box>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
-              >
-                Reset Password
-              </button>
+      <TextField
+        label="Confirm Password"
+        type={showConfirm ? 'text' : 'password'}
+        size="small"
+        fullWidth
+        value={formData.confirmPassword}
+        onChange={(e) => set('confirmPassword', e.target.value)}
+        required
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton size="small" onClick={() => setShowConfirm((v) => !v)}>
+                {showConfirm ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
 
-              {message && (
-                <p className="text-center text-blue-600 mb-3">{message}</p>
-              )}
-            </form>
-          </div>
-        </>
-      )}
-    </div>
+      <Button
+        type="submit"
+        variant="contained"
+        fullWidth
+        size="large"
+        disabled={submitting}
+        sx={{ mt: 1 }}
+      >
+        {submitting ? <CircularProgress size={20} color="inherit" /> : 'Reset Password'}
+      </Button>
+    </Stack>
   );
 }
