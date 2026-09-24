@@ -26,6 +26,7 @@ const CARDS = [
     gradient: 'linear-gradient(135deg, #9254de 0%, #f759ab 100%)',
     image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=60',
     link: '/nosql',
+    blocked: true,
   },
   {
     title: 'Vector DB',
@@ -34,6 +35,7 @@ const CARDS = [
     gradient: 'linear-gradient(135deg, #52c41a 0%, #36cfc9 100%)',
     image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&w=800&q=60',
     link: '/vector-database',
+    blocked: true,
   },
 ];
 
@@ -140,18 +142,20 @@ export default function Landing() {
             return (
               <Card
                 key={card.title}
-                elevation={isHovered ? 8 : 1}
-                onMouseEnter={() => setHovered(idx)}
+                elevation={isHovered && !card.blocked ? 8 : 1}
+                onMouseEnter={() => !card.blocked && setHovered(idx)}
                 onMouseLeave={() => setHovered(null)}
                 sx={{
                   position: 'relative',
                   overflow: 'hidden',
-                  cursor: 'pointer',
-                  transform: isHovered ? 'translateY(-6px)' : 'translateY(0)',
+                  cursor: card.blocked ? 'not-allowed' : 'pointer',
+                  transform: isHovered && !card.blocked ? 'translateY(-6px)' : 'translateY(0)',
                   transition: 'all 0.3s ease',
                   border: `1px solid ${theme.palette.divider}`,
+                  opacity: card.blocked ? 0.6 : 1,
+                  pointerEvents: card.blocked ? 'none' : 'auto',
                 }}
-                onClick={() => card.link && navigate(card.link)}
+                onClick={() => !card.blocked && card.link && navigate(card.link)}
               >
                 {/* Image */}
                 <Box sx={{ position: 'relative', height: 200, overflow: 'hidden' }}>
@@ -168,6 +172,25 @@ export default function Landing() {
                   />
                   {/* Gradient overlay */}
                   <Box sx={{ position: 'absolute', inset: 0, background: card.gradient, opacity: isHovered ? 0.55 : 0.35, transition: 'opacity 0.4s' }} />
+
+                  {/* Coming Soon badge */}
+                  {card.blocked && (
+                    <Chip
+                      label="Coming Soon"
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: 16,
+                        left: 16,
+                        bgcolor: 'rgba(0,0,0,0.55)',
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        backdropFilter: 'blur(4px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                      }}
+                    />
+                  )}
 
                   {/* Floating icon */}
                   <Box
