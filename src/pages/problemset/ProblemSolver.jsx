@@ -5,6 +5,7 @@ import {
   Box, Typography, Chip, Divider, Stack, Button, Tab, Tabs,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, CircularProgress, IconButton, Tooltip, Skeleton, useTheme, LinearProgress,
+  ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import RunIcon from '@mui/icons-material/PlayArrowRounded';
 import SubmitIcon from '@mui/icons-material/CheckCircleOutlineRounded';
@@ -389,6 +390,7 @@ export default function ProblemSolver() {
   const [problem,    setProblem]    = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [query,      setQuery]      = useState('-- Write your SQL query here\nSELECT ');
+  const [sqlMode,    setSqlMode]    = useState('MySQL');
   const [result,     setResult]     = useState(null);
   const [running,    setRunning]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -413,7 +415,7 @@ export default function ProblemSolver() {
     if (!query.trim()) return;
     setRunning(true);
     setResult(null);
-    const res = await runSQLQuery(problemId, query);
+    const res = await runSQLQuery(problemId, query, sqlMode);
     setResult(res.success ? res.data : { error: res.message || 'Query failed.' });
     setRunning(false);
   };
@@ -422,7 +424,7 @@ export default function ProblemSolver() {
     if (!query.trim()) return;
     setSubmitting(true);
     setResult(null);
-    const res = await submitSQLQuery(problemId, query);
+    const res = await submitSQLQuery(problemId, query, sqlMode);
     if (!res.success) {
       setResult({ error: res.message || 'Submission failed.' });
       setSubmitting(false);
@@ -590,6 +592,17 @@ export default function ProblemSolver() {
           </Typography>
 
           <Box sx={{ flex: 1 }} />
+
+          <ToggleButtonGroup
+            value={sqlMode}
+            exclusive
+            onChange={(_, v) => { if (v) setSqlMode(v); }}
+            size="small"
+            sx={{ '& .MuiToggleButton-root': { py: 0.25, px: 1.25, fontSize: '0.7rem', fontWeight: 600, textTransform: 'none' } }}
+          >
+            <ToggleButton value="MySQL">MySQL</ToggleButton>
+            <ToggleButton value="PostgreSQL">PostgreSQL</ToggleButton>
+          </ToggleButtonGroup>
 
           <Tooltip title="Run (Ctrl+Enter)">
             <span>
