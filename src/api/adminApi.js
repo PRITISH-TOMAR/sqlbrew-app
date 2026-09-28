@@ -7,7 +7,7 @@ const DEFAULT_ERROR = 'Admin API error';
 
 export const listUsers = async () => {
   try {
-    const response = await api.post('/admin/users/list');
+    const response = await api.get('/users');
     if (response.status === 200) return ApiResponse.success(response.data.message, response.data.data);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -17,7 +17,7 @@ export const listUsers = async () => {
 
 export const getUserDetail = async (userId) => {
   try {
-    const response = await api.post('/admin/users/detail', { userId });
+    const response = await api.get(`/users/${userId}`);
     if (response.status === 200) return ApiResponse.success(response.data.message, response.data.data);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -27,7 +27,7 @@ export const getUserDetail = async (userId) => {
 
 export const updateUserStatus = async (userId, status) => {
   try {
-    const response = await api.post('/admin/users/status', { userId, status });
+    const response = await api.patch(`/users/${userId}/status`, { status });
     if (response.status === 200) return ApiResponse.success(response.data.message);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -37,7 +37,7 @@ export const updateUserStatus = async (userId, status) => {
 
 export const updateUserRole = async (userId, newRole) => {
   try {
-    const response = await api.post('/admin/users/role', { userId, newRole });
+    const response = await api.patch(`/users/${userId}/role`, { newRole });
     if (response.status === 200) return ApiResponse.success(response.data.message);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -47,7 +47,7 @@ export const updateUserRole = async (userId, newRole) => {
 
 export const updateUserPermissions = async (userId, grants, revokes) => {
   try {
-    const response = await api.post('/admin/users/permissions', { userId, grants, revokes });
+    const response = await api.put(`/users/${userId}/permissions`, { grants, revokes });
     if (response.status === 200) return ApiResponse.success(response.data.message);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -59,7 +59,7 @@ export const updateUserPermissions = async (userId, grants, revokes) => {
 
 export const listAdminScopes = async () => {
   try {
-    const response = await api.get('/superadmin/scopes');
+    const response = await api.get('/users/admin-scopes');
     if (response.status === 200) return ApiResponse.success(response.data.message, response.data.data);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -69,7 +69,7 @@ export const listAdminScopes = async () => {
 
 export const setAdminScope = async (adminId, moduleKey, grantableOps) => {
   try {
-    const response = await api.post('/superadmin/scopes', { adminId, moduleKey, grantableOps });
+    const response = await api.put(`/users/admin-scopes/${adminId}`, { moduleKey, grantableOps });
     if (response.status === 200) return ApiResponse.success(response.data.message);
     return ApiResponse.error(response.data.message);
   } catch (error) {
@@ -81,7 +81,7 @@ export const setAdminScope = async (adminId, moduleKey, grantableOps) => {
 
 export const adminGetTestCaseByQuestion = async (questionId) => {
   try {
-    const res = await api.get(`/admin/content/testcase/by-question/${questionId}`);
+    const res = await api.get(`/problems/${questionId}/testcases`);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -89,7 +89,7 @@ export const adminGetTestCaseByQuestion = async (questionId) => {
 
 export const adminGetSolutionsByQuestion = async (questionId) => {
   try {
-    const res = await api.get(`/admin/content/solution/by-question/${questionId}`);
+    const res = await api.get(`/problems/${questionId}/solutions`);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -99,7 +99,7 @@ export const adminGetSolutionsByQuestion = async (questionId) => {
 
 export const adminCreateDataset = async (data) => {
   try {
-    const res = await api.post('/admin/content/dataset', data);
+    const res = await api.post(`/module/${data.dataType}/datasets`, data);
     if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -107,7 +107,7 @@ export const adminCreateDataset = async (data) => {
 
 export const adminUpdateDataset = async (id, data) => {
   try {
-    const res = await api.put(`/admin/content/dataset/${id}`, data);
+    const res = await api.put(`/datasets/${id}`, data);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -115,7 +115,7 @@ export const adminUpdateDataset = async (id, data) => {
 
 export const adminDeleteDataset = async (id) => {
   try {
-    const res = await api.delete(`/admin/content/dataset/${id}`);
+    const res = await api.delete(`/datasets/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -123,7 +123,7 @@ export const adminDeleteDataset = async (id) => {
 
 export const adminCreateQuestion = async (data) => {
   try {
-    const res = await api.post('/admin/content/question', data);
+    const res = await api.post(`/datasets/${data.datasetId}/problems`, data);
     if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -131,7 +131,7 @@ export const adminCreateQuestion = async (data) => {
 
 export const adminUpdateQuestion = async (id, data) => {
   try {
-    const res = await api.put(`/admin/content/question/${id}`, data);
+    const res = await api.patch(`/problems/${id}`, data);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -139,7 +139,7 @@ export const adminUpdateQuestion = async (id, data) => {
 
 export const adminDeleteQuestion = async (id) => {
   try {
-    const res = await api.delete(`/admin/content/question/${id}`);
+    const res = await api.delete(`/problems/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -147,7 +147,7 @@ export const adminDeleteQuestion = async (id) => {
 
 export const adminCreateTestCase = async (data) => {
   try {
-    const res = await api.post('/admin/content/testcase', data);
+    const res = await api.post('/testcases', data);
     if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -155,7 +155,7 @@ export const adminCreateTestCase = async (data) => {
 
 export const adminUpdateTestCase = async (id, data) => {
   try {
-    const res = await api.put(`/admin/content/testcase/${id}`, data);
+    const res = await api.put(`/testcases/${id}`, data);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -163,7 +163,7 @@ export const adminUpdateTestCase = async (id, data) => {
 
 export const adminDeleteTestCase = async (id) => {
   try {
-    const res = await api.delete(`/admin/content/testcase/${id}`);
+    const res = await api.delete(`/testcases/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -171,7 +171,7 @@ export const adminDeleteTestCase = async (id) => {
 
 export const adminCreateSolution = async (data) => {
   try {
-    const res = await api.post('/admin/content/solution', data);
+    const res = await api.post('/solutions', data);
     if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -179,7 +179,7 @@ export const adminCreateSolution = async (data) => {
 
 export const adminUpdateSolution = async (id, data) => {
   try {
-    const res = await api.put(`/admin/content/solution/${id}`, data);
+    const res = await api.put(`/solutions/${id}`, data);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -187,7 +187,7 @@ export const adminUpdateSolution = async (id, data) => {
 
 export const adminDeleteSolution = async (id) => {
   try {
-    const res = await api.delete(`/admin/content/solution/${id}`);
+    const res = await api.delete(`/solutions/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
