@@ -1,33 +1,57 @@
 import { useState } from 'react';
-import { Box, Tab, Tabs, Typography } from '@mui/material';
+import { Box, FormControl, Select, MenuItem } from '@mui/material';
 import DatasetManager  from './DatasetManager.jsx';
 import QuestionManager from './QuestionManager.jsx';
 
-const TABS = [
-  { label: 'Datasets',  desc: 'Create, edit, or soft-delete datasets.' },
-  { label: 'Questions', desc: 'Manage questions — click a row to view and edit its test cases and expected solutions inline.' },
-];
+const CHALK_FONT = "'Caveat', cursive";
+const BORDER     = '1.5px solid rgba(255,255,255,0.5)';
+
+const MODULES = ['Datasets', 'Questions'];
 
 export default function ContentTab() {
-  const [tab, setTab] = useState(0);
+  const [module, setModule] = useState(0);
 
   return (
     <Box>
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+      {/* Toolbar row */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+        <FormControl size="small">
+          <Select
+            value={module}
+            onChange={(e) => setModule(e.target.value)}
+            sx={{
+              fontFamily: CHALK_FONT,
+              fontSize: '1.05rem',
+              color: '#fff',
+              border: BORDER,
+              borderRadius: '8px',
+              minWidth: 180,
+              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+              '& .MuiSelect-icon': { color: '#fff' },
+              bgcolor: 'transparent',
+            }}
+          >
+            {MODULES.map((m, i) => (
+              <MenuItem key={m} value={i} sx={{ fontFamily: CHALK_FONT, fontSize: '1.05rem' }}>
+                {m}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Content area */}
+      <Box
+        sx={{
+          border: '1px solid rgba(255,255,255,0.22)',
+          borderRadius: '10px',
+          p: 2,
+          minHeight: 300,
+        }}
       >
-        {TABS.map((t) => <Tab key={t.label} label={t.label} />)}
-      </Tabs>
-
-      <Typography variant="body2" color="text.secondary" mb={2}>
-        {TABS[tab].desc}
-        {' '}Operations are gated by your module permissions (WRITE / DELETE).
-      </Typography>
-
-      {tab === 0 && <DatasetManager />}
-      {tab === 1 && <QuestionManager />}
+        {module === 0 && <DatasetManager />}
+        {module === 1 && <QuestionManager />}
+      </Box>
     </Box>
   );
 }
