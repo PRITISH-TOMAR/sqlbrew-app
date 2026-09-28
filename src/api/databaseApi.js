@@ -14,7 +14,7 @@ const DEFAULT_ERROR_MESSAGE = `Can not connect to the server`
 
 export const loadNoSQLDatasets = async (payload) => {
   try {
-    const response = await api.get(`/db/nosql/all`, {
+    const response = await api.get(`/module/NOSQL/datasets`, {
       params: { page: payload.page, size: payload.size, search: payload.search || '' }
     });
     if (response.status === 200) {
@@ -32,7 +32,7 @@ export const loadNoSQLDatasets = async (payload) => {
 
 export const loadVectorDBDatasets = async (payload) => {
   try {
-    const response = await api.get(`/db/vectordb/all`, {
+    const response = await api.get(`/module/VECTORDB/datasets`, {
       params: { page: payload.page, size: payload.size, search: payload.search || '' }
     });
     if (response.status === 200) {
@@ -50,7 +50,7 @@ export const loadVectorDBDatasets = async (payload) => {
 
 export const loadSQLDatasets = async (payload) => {
   try {
-    const url = `/db/sql/all`;
+    const url = `/module/SQL/datasets`;
 
     const response = await api.get(url, {
       params: {
@@ -81,7 +81,7 @@ export const loadSQLDatasets = async (payload) => {
 
 export const loadDatasetDetails = async (payloadId) => {
   try {
-    const url = `/db/sql/${payloadId}`;
+    const url = `/datasets/${payloadId}`;
 
     const response = await api.get(url);
 
@@ -106,7 +106,7 @@ export const loadDatasetDetails = async (payloadId) => {
 
 export const loadProblemDetails = async (problemId) => {
   try {
-    const response = await api.get(`/db/sql/problem/${problemId}`);
+    const response = await api.get(`/problems/${problemId}`);
     if (response.status === 200) {
       return ApiResponse.success(response.data.message, response.data.data);
     }
@@ -118,9 +118,9 @@ export const loadProblemDetails = async (problemId) => {
   }
 };
 
-export const runSQLQuery = async (questionId, query) => {
+export const runSQLQuery = async (questionId, query, sqlMode) => {
   try {
-    const response = await api.post(`/sql/run`, { questionId, query });
+    const response = await api.post(`/sql/run`, { questionId, query, sqlMode });
     if (response.status === 200) {
       return ApiResponse.success(response.data.message, response.data.data);
     }
@@ -132,9 +132,9 @@ export const runSQLQuery = async (questionId, query) => {
   }
 };
 
-export const submitSQLQuery = async (questionId, query) => {
+export const submitSQLQuery = async (questionId, query, sqlMode) => {
   try {
-    const response = await api.post(`/sql/execute`, { questionId, query });
+    const response = await api.post(`/sql/execute`, { questionId, query, sqlMode });
     if (response.status === 200) {
       return ApiResponse.success(response.data.message, response.data.data);
     }
@@ -173,7 +173,7 @@ export const loadExpectedOutput = async (questionId) => {
 
 export const loadSQLQuestionSet = async (payloadId) => {
   try {
-    const url = `/db/sql/${payloadId}/problems`;
+    const url = `/datasets/${payloadId}/problems`;
 
     const response = await api.get(url);
 
