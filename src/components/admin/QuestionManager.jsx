@@ -4,19 +4,21 @@ import {
   TextField, MenuItem, Table, TableHead, TableBody, TableRow, TableCell,
   TableContainer, Paper, IconButton, Chip, Typography, Alert,
   CircularProgress, Tooltip, FormControl, InputLabel, Select,
-  Drawer, Divider, Stack,
+  Drawer, Divider, Stack, Collapse,
 } from '@mui/material';
-import EditIcon   from '@mui/icons-material/EditOutlined';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import AddIcon    from '@mui/icons-material/AddOutlined';
-import CloseIcon  from '@mui/icons-material/CloseOutlined';
+import EditIcon       from '@mui/icons-material/EditOutlined';
+import DeleteIcon     from '@mui/icons-material/DeleteOutlined';
+import AddIcon        from '@mui/icons-material/AddOutlined';
+import CloseIcon      from '@mui/icons-material/CloseOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { loadSQLDatasets, loadSQLQuestionSet } from '../../api/databaseApi.js';
 import {
   adminCreateQuestion, adminUpdateQuestion, adminDeleteQuestion,
   adminGetTestCaseByQuestion,
   adminCreateTestCase, adminUpdateTestCase, adminDeleteTestCase,
   adminGetSolutionsByQuestion,
-  adminCreateSolution, adminUpdateSolution, adminDeleteSolution,
+  adminGenerateSolution,
 } from '../../api/adminApi.js';
 
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
@@ -30,8 +32,6 @@ const EMPTY_Q = { datasetId: '', title: '', question: '', difficulty: 'MEDIUM', 
 // ── TC form defaults ──────────────────────────────────────────────────────────
 const EMPTY_TC = { questionId: '', type: '', expectedSql: '', testCases: '[]' };
 
-// ── Solution form defaults ────────────────────────────────────────────────────
-const EMPTY_SOL = { questionId: '', datasetId: '', sqlMode: '', solutions: '[]' };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small helper: JSON textarea with validation
@@ -52,13 +52,125 @@ function JsonField({ label, value, onChange, rows = 8, helperText }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TcCard — expandable card for a single TestCase entry
+// ─────────────────────────────────────────────────────────────────────────────
+function MiniTable({ columns, rows }) {
+  if (!columns?.length) return null;
+  return (
+    <TableContainer sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 1 }}>
+      <Table size="small" stickyHeader>
+        <TableHead>
+          <TableRow>
+            {columns.map((col) => (
+              <TableCell key={col} sx={{ fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap', bgcolor: 'background.paper', py: 0.5 }}>
+                {col}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows?.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} align="center">
+                <Typography variant="caption" color="text.secondary">0 rows</Typography>
+              </TableCell>
+            </TableRow>
+          ) : rows?.map((row, ri) => (
+            <TableRow key={ri}>
+              {row.map((cell, ci) => (
+                <TableCell key={ci} sx={{ fontSize: 10, whiteSpace: 'nowrap', py: 0.5 }}>
+                  {cell === null || cell === undefined
+                    ? <span style={{ opacity: 0.4, fontStyle: 'italic' }}>NULL</span>
+                    : String(cell)}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+function TcCard({ index, tcase }) {
+  const [open, setOpen] = useState(false);
+  const sampleTables = Array.isArray(tcase.sampleData) ? tcase.sampleData : [];
+  const expOut = tcase.expectedOutput;
+  const expCols = expOut?.columns ?? [];
+  const expRows = expOut?.rows    ?? [];
+
+  return (
+    <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+      {/* Header row */}
+      <Box
+        onClick={() => setOpen((v) => !v)}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 24, fontWeight: 600 }}>
+          #{index + 1}
+        </Typography>
+        <Chip
+          label={tcase.type ?? 'UNKNOWN'}
+          size="small"
+          color={tcase.type?.toLowerCase() === 'public' ? 'success' : 'default'}
+          sx={{ fontSize: 10, height: 20 }}
+        />
+        {sampleTables.length > 0 && (
+          <Typography variant="caption" color="text.secondary">
+            {sampleTables.map((t) => `${t.table}(${t.rows?.length ?? 0})`).join(', ')}
+          </Typography>
+        )}
+        {expCols.length > 0 && (
+          <Chip label={`out: ${expOut?.rowsCount ?? expRows.length}r`} size="small" variant="outlined" sx={{ fontSize: 10, height: 20, ml: 'auto' }} />
+        )}
+        <IconButton size="small" sx={{ ml: expCols.length > 0 ? 0 : 'auto', p: 0.25 }}>
+          {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        </IconButton>
+      </Box>
+
+      {/* Expandable body */}
+      <Collapse in={open}>
+        <Box sx={{ px: 1.5, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {sampleTables.map((tbl) => (
+            <Box key={tbl.table}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                Sample — <strong>{tbl.table}</strong>
+              </Typography>
+              <MiniTable columns={tbl.columns} rows={tbl.rows} />
+            </Box>
+          ))}
+
+          {expCols.length > 0 && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                Expected Output
+              </Typography>
+              <MiniTable columns={expCols} rows={expRows} />
+            </Box>
+          )}
+
+          {tcase.numericTolerance != null && (
+            <Typography variant="caption" color="text.secondary">
+              Numeric tolerance: {tcase.numericTolerance}
+            </Typography>
+          )}
+        </Box>
+      </Collapse>
+    </Paper>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function QuestionManager() {
+export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
   // ── Dataset + question list ───────────────────────────────────────────────
   const [datasets,  setDatasets]  = useState([]);
   const [datasetId, setDatasetId] = useState('');
   const [questions, setQuestions] = useState([]);
+
+  // When parent controls the dataset, mirror it
+  const effectiveDatasetId = externalDatasetId || datasetId;
   const [qLoading,  setQLoading]  = useState(false);
   const [listError, setListError] = useState(null);
 
@@ -70,8 +182,8 @@ export default function QuestionManager() {
   const [tc,        setTc]        = useState(null);   // TestCases group or null
   const [tcLoading, setTcLoading] = useState(false);
 
-  // ── Solutions state (inside drawer) ──────────────────────────────────────
-  const [solutions,  setSolutions]  = useState([]);
+  // ── Solution state (single, inside drawer) ────────────────────────────────
+  const [solution,   setSolution]   = useState(null);  // single ExpectedSolution or null
   const [solLoading, setSolLoading] = useState(false);
 
   // ── Question form dialog ──────────────────────────────────────────────────
@@ -96,16 +208,12 @@ export default function QuestionManager() {
   const [tcDeleteOpen, setTcDeleteOpen] = useState(false);
   const [tcDeleteBusy, setTcDeleteBusy] = useState(false);
 
-  // ── Solution form dialog ──────────────────────────────────────────────────
+  // ── Solution form dialog (SQL-entry only) ────────────────────────────────
   const [solFormOpen, setSolFormOpen] = useState(false);
-  const [solEditId,   setSolEditId]   = useState(null);
-  const [solForm,     setSolForm]     = useState(EMPTY_SOL);
+  const [solQuery,    setSolQuery]    = useState('');
+  const [solMode,     setSolMode]     = useState('');
   const [solFormBusy, setSolFormBusy] = useState(false);
   const [solFormErr,  setSolFormErr]  = useState(null);
-
-  // ── Solution delete ───────────────────────────────────────────────────────
-  const [solDeleteId,   setSolDeleteId]   = useState(null);
-  const [solDeleteBusy, setSolDeleteBusy] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Loaders
@@ -115,6 +223,17 @@ export default function QuestionManager() {
       if (res.isSuccess()) setDatasets(res.getData()?.items ?? []);
     });
   }, []);
+
+  // Reload questions whenever the external dataset changes
+  useEffect(() => {
+    if (externalDatasetId) {
+      setQuestions([]);
+      loadQuestions(externalDatasetId);
+    } else {
+      setQuestions([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalDatasetId]);
 
   const loadQuestions = (dsId) => {
     if (!dsId) return;
@@ -135,12 +254,15 @@ export default function QuestionManager() {
       setTcLoading(false);
       if (res.isSuccess()) setTc(res.getData());
     });
-    // Solutions
+    // Solution (single)
     setSolLoading(true);
-    setSolutions([]);
+    setSolution(null);
     adminGetSolutionsByQuestion(questionId).then((res) => {
       setSolLoading(false);
-      if (res.isSuccess()) setSolutions(res.getData() ?? []);
+      if (res.isSuccess()) {
+        const list = res.getData() ?? [];
+        setSolution(list.length > 0 ? list[0] : null);
+      }
     });
   };
 
@@ -154,7 +276,7 @@ export default function QuestionManager() {
     setDrawerOpen(false);
     setSelected(null);
     setTc(null);
-    setSolutions([]);
+    setSolution(null);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -162,7 +284,7 @@ export default function QuestionManager() {
   // ─────────────────────────────────────────────────────────────────────────
   const openQCreate = () => {
     setQEditingId(null);
-    setQForm({ ...EMPTY_Q, datasetId });
+    setQForm({ ...EMPTY_Q, datasetId: effectiveDatasetId });
     setQFormErr(null);
     setQFormOpen(true);
   };
@@ -170,7 +292,7 @@ export default function QuestionManager() {
   const openQEdit = (q) => {
     setQEditingId(q.id);
     setQForm({
-      datasetId: q.datasetId ?? datasetId,
+      datasetId: q.datasetId ?? effectiveDatasetId,
       title: q.title ?? '', question: q.question ?? '',
       difficulty: q.difficulty ?? 'MEDIUM', type: q.type ?? '',
       tags: toStr(q.tags), tableNames: toStr(q.tableNames),
@@ -189,7 +311,7 @@ export default function QuestionManager() {
     setQFormBusy(false);
     if (res.isSuccess()) {
       setQFormOpen(false);
-      loadQuestions(datasetId);
+      loadQuestions(effectiveDatasetId);
       if (qEditingId && selected?.id === qEditingId) setSelected(res.getData());
     } else setQFormErr(res.message);
   };
@@ -199,7 +321,7 @@ export default function QuestionManager() {
     const res = await adminDeleteQuestion(qDeleteId);
     setQDeleteBusy(false);
     setQDeleteId(null);
-    if (res.isSuccess()) { loadQuestions(datasetId); closeDrawer(); }
+    if (res.isSuccess()) { loadQuestions(effectiveDatasetId); closeDrawer(); }
     else setListError(res.message);
   };
 
@@ -250,49 +372,26 @@ export default function QuestionManager() {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Solution CRUD
+  // Solution — generate via backend execution
   // ─────────────────────────────────────────────────────────────────────────
-  const openSolCreate = () => {
-    setSolEditId(null);
-    setSolForm({ ...EMPTY_SOL, questionId: selected?.id ?? '', datasetId: selected?.datasetId ?? '' });
+  const openSolForm = () => {
+    const existing = solution?.solutions?.[0];
+    setSolQuery(existing?.solutionQuery ?? '');
+    setSolMode(solution?.sqlMode ?? '');
     setSolFormErr(null);
     setSolFormOpen(true);
   };
 
-  const openSolEdit = (sol) => {
-    setSolEditId(sol.id);
-    setSolForm({
-      questionId: sol.questionId ?? selected?.id ?? '',
-      datasetId: sol.datasetId ?? '',
-      sqlMode: sol.sqlMode ?? '',
-      solutions: JSON.stringify(sol.solutions ?? [], null, 2),
-    });
-    setSolFormErr(null);
-    setSolFormOpen(true);
-  };
-
-  const handleSolSave = async () => {
-    let parsed;
-    try { parsed = JSON.parse(solForm.solutions); } catch { setSolFormErr('Invalid JSON in solutions'); return; }
+  const handleSolGenerate = async () => {
+    if (!solQuery.trim()) { setSolFormErr('SQL query is required'); return; }
     setSolFormBusy(true);
     setSolFormErr(null);
-    const payload = { ...solForm, solutions: parsed };
-    const res = solEditId
-      ? await adminUpdateSolution(solEditId, payload)
-      : await adminCreateSolution(payload);
+    const res = await adminGenerateSolution(selected.id, { solutionQuery: solQuery, sqlMode: solMode });
     setSolFormBusy(false);
     if (res.isSuccess()) {
       setSolFormOpen(false);
-      adminGetSolutionsByQuestion(selected.id).then((r) => { if (r.isSuccess()) setSolutions(r.getData() ?? []); });
+      setSolution(res.getData());
     } else setSolFormErr(res.message);
-  };
-
-  const handleSolDelete = async () => {
-    setSolDeleteBusy(true);
-    const res = await adminDeleteSolution(solDeleteId);
-    setSolDeleteBusy(false);
-    setSolDeleteId(null);
-    if (res.isSuccess()) adminGetSolutionsByQuestion(selected.id).then((r) => { if (r.isSuccess()) setSolutions(r.getData() ?? []); });
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -300,32 +399,46 @@ export default function QuestionManager() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <Box>
-      {/* ── Dataset selector + New button ── */}
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
-        <FormControl size="small" sx={{ minWidth: 280 }}>
-          <InputLabel>Select Dataset</InputLabel>
-          <Select
-            label="Select Dataset" value={datasetId}
-            onChange={(e) => { setDatasetId(e.target.value); setQuestions([]); loadQuestions(e.target.value); }}
-          >
-            {datasets.map((d) => (
-              <MenuItem key={d.id} value={d.id}>
-                {d.title}
-                <Typography variant="caption" color="text.secondary" ml={1}>({d.id})</Typography>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openQCreate} disabled={!datasetId}>
-          New Question
-        </Button>
-      </Box>
+      {/* ── Dataset selector + New button (only when no external datasetId) ── */}
+      {!externalDatasetId && (
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 280 }}>
+            <InputLabel>Select Dataset</InputLabel>
+            <Select
+              label="Select Dataset" value={datasetId}
+              onChange={(e) => { setDatasetId(e.target.value); setQuestions([]); loadQuestions(e.target.value); }}
+            >
+              {datasets.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.title}
+                  <Typography variant="caption" color="text.secondary" ml={1}>({d.id})</Typography>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openQCreate} disabled={!datasetId}>
+            New Question
+          </Button>
+        </Box>
+      )}
+
+      {/* ── New Question button when external dataset is active ── */}
+      {externalDatasetId && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            {qLoading ? 'Loading…' : `${questions.length} question(s)`}
+          </Typography>
+          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openQCreate}>
+            New Question
+          </Button>
+        </Box>
+      )}
 
       {listError && <Alert severity="error" sx={{ mb: 2 }}>{listError}</Alert>}
 
       {qLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress size={32} /></Box>
-      ) : datasetId ? (
+      ) : effectiveDatasetId ? (
         <TableContainer component={Paper} variant="outlined">
           <Table size="small">
             <TableHead>
@@ -365,6 +478,7 @@ export default function QuestionManager() {
         <Typography variant="body2" color="text.secondary" py={2}>Select a dataset to view its questions.</Typography>
       )}
 
+
       {/* ═══════════════════════════════════════════════════════════════════
           RIGHT DRAWER — question detail + TC + solutions
       ═════════════════════════════════════════════════════════════════════ */}
@@ -403,34 +517,49 @@ export default function QuestionManager() {
             {/* ── Test Cases section ── */}
             <Box sx={{ mb: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600">Test Cases</Typography>
-                {!tc && !tcLoading && (
-                  <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openTcCreate}>
-                    Create
-                  </Button>
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" fontWeight="600">Test Cases</Typography>
+                  {tc && <Chip label={`${tc.testCases?.length ?? 0}`} size="small" variant="outlined" sx={{ height: 18, fontSize: 10 }} />}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  {tc ? (
+                    <>
+                      <Tooltip title="Edit"><IconButton size="small" onClick={openTcEdit}><EditIcon fontSize="small" /></IconButton></Tooltip>
+                      <Tooltip title="Delete group"><IconButton size="small" color="error" onClick={() => setTcDeleteOpen(true)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+                    </>
+                  ) : !tcLoading && (
+                    <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openTcCreate}>
+                      Create
+                    </Button>
+                  )}
+                </Box>
               </Box>
 
               {tcLoading ? (
-                <CircularProgress size={20} />
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={20} /></Box>
               ) : tc ? (
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Stack direction="row" gap={1} flexWrap="wrap">
-                      {tc.type && <Chip label={tc.type} size="small" />}
-                      <Chip label={`${tc.testCases?.length ?? 0} cases`} size="small" variant="outlined" />
-                    </Stack>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <Tooltip title="Edit test cases"><IconButton size="small" onClick={openTcEdit}><EditIcon fontSize="small" /></IconButton></Tooltip>
-                      <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setTcDeleteOpen(true)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
-                    </Box>
-                  </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {/* Expected SQL */}
                   {tc.expectedSql && (
-                    <Box component="pre" sx={{ mt: 1.5, p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: 11, whiteSpace: 'pre-wrap', overflowX: 'auto' }}>
-                      {tc.expectedSql}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Expected SQL
+                      </Typography>
+                      <Box component="pre" sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: 11, whiteSpace: 'pre-wrap', overflowX: 'auto', m: 0 }}>
+                        {tc.expectedSql}
+                      </Box>
                     </Box>
                   )}
-                </Paper>
+
+                  {/* Individual test case cards */}
+                  {tc.testCases?.length > 0 ? (
+                    tc.testCases.map((tcase, i) => (
+                      <TcCard key={tcase.id ?? i} index={i} tcase={tcase} />
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No individual test cases in this group.</Typography>
+                  )}
+                </Box>
               ) : (
                 <Typography variant="body2" color="text.secondary">No test case group found.</Typography>
               )}
@@ -438,45 +567,86 @@ export default function QuestionManager() {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* ── Expected Solutions section ── */}
+            {/* ── Expected Solution section (single) ── */}
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600">Expected Solutions</Typography>
-                <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openSolCreate}>
-                  Add Solution
+                <Typography variant="subtitle2" fontWeight="600">Expected Solution</Typography>
+                <Button size="small" variant="contained" startIcon={solution ? <EditIcon /> : <AddIcon />} onClick={openSolForm}>
+                  {solution ? 'Edit Solution' : 'Set Solution'}
                 </Button>
               </Box>
 
               {solLoading ? (
                 <CircularProgress size={20} />
-              ) : solutions.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell><b>ID</b></TableCell>
-                        <TableCell><b>SQL Mode</b></TableCell>
-                        <TableCell><b>Entries</b></TableCell>
-                        <TableCell align="right"><b>Actions</b></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {solutions.map((s) => (
-                        <TableRow key={s.id} hover>
-                          <TableCell><Typography variant="caption" color="text.secondary">{s.id}</Typography></TableCell>
-                          <TableCell><Chip label={s.sqlMode || '—'} size="small" /></TableCell>
-                          <TableCell><Typography variant="caption">{s.solutions?.length ?? 0}</Typography></TableCell>
-                          <TableCell align="right">
-                            <Tooltip title="Edit"><IconButton size="small" onClick={() => openSolEdit(s)}><EditIcon fontSize="small" /></IconButton></Tooltip>
-                            <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => setSolDeleteId(s.id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography variant="body2" color="text.secondary">No expected solutions found.</Typography>
+              ) : solution ? (() => {
+                const entry  = solution.solutions?.[0];
+                const output = entry?.expectedOutput;
+                const cols   = output?.columns ?? [];
+                const rows   = output?.rows    ?? [];
+                return (
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    {/* Meta chips */}
+                    <Stack direction="row" gap={1} flexWrap="wrap" mb={1.5}>
+                      {solution.sqlMode && <Chip label={solution.sqlMode} size="small" />}
+                      {output && (
+                        <Chip
+                          label={`${output.rowsCount ?? rows.length} rows · ${cols.length} cols`}
+                          size="small" variant="outlined"
+                        />
+                      )}
+                    </Stack>
+
+                    {/* SQL query */}
+                    {entry?.solutionQuery && (
+                      <Box component="pre" sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: 11, whiteSpace: 'pre-wrap', overflowX: 'auto', mb: 1.5, mt: 0 }}>
+                        {entry.solutionQuery}
+                      </Box>
+                    )}
+
+                    {/* Expected output table */}
+                    {cols.length > 0 && (
+                      <>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Expected Output
+                        </Typography>
+                        <TableContainer sx={{ maxHeight: 260, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 1 }}>
+                          <Table size="small" stickyHeader>
+                            <TableHead>
+                              <TableRow>
+                                {cols.map((col) => (
+                                  <TableCell key={col} sx={{ fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', bgcolor: 'background.paper' }}>
+                                    {col}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {rows.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={cols.length} align="center">
+                                    <Typography variant="caption" color="text.secondary">0 rows</Typography>
+                                  </TableCell>
+                                </TableRow>
+                              ) : rows.map((row, ri) => (
+                                <TableRow key={ri}>
+                                  {row.map((cell, ci) => (
+                                    <TableCell key={ci} sx={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                                      {cell === null || cell === undefined
+                                        ? <span style={{ opacity: 0.4, fontStyle: 'italic' }}>NULL</span>
+                                        : String(cell)}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </>
+                    )}
+                  </Paper>
+                );
+              })() : (
+                <Typography variant="body2" color="text.secondary">No expected solution yet. Enter a SQL query to generate one.</Typography>
               )}
             </Box>
           </>
@@ -562,42 +732,36 @@ export default function QuestionManager() {
         </DialogActions>
       </Dialog>
 
-      {/* ═══ Solution Form Dialog ════════════════════════════════════════════ */}
+      {/* ═══ Solution Form Dialog (SQL-entry, execute & save) ═══════════════ */}
       <Dialog open={solFormOpen} onClose={() => setSolFormOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{solEditId ? 'Edit Expected Solution' : 'New Expected Solution'}</DialogTitle>
+        <DialogTitle>{solution ? 'Edit Expected Solution' : 'Set Expected Solution'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
           {solFormErr && <Alert severity="error">{solFormErr}</Alert>}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField label="Question ID" value={solForm.questionId} onChange={(e) => setSolForm({ ...solForm, questionId: e.target.value })} size="small" required fullWidth />
-            <TextField label="Dataset ID" value={solForm.datasetId} onChange={(e) => setSolForm({ ...solForm, datasetId: e.target.value })} size="small" required fullWidth />
-          </Box>
-          <TextField label="SQL Mode" value={solForm.sqlMode} onChange={(e) => setSolForm({ ...solForm, sqlMode: e.target.value })} size="small" sx={{ width: 220 }} placeholder="e.g. STANDARD" />
-          <JsonField
-            label="Solutions (JSON array)"
-            value={solForm.solutions}
-            onChange={(v) => setSolForm((f) => ({ ...f, solutions: v }))}
+          <TextField
+            label="SQL Mode"
+            value={solMode}
+            onChange={(e) => setSolMode(e.target.value)}
+            size="small"
+            sx={{ width: 220 }}
+            placeholder="e.g. STANDARD"
+          />
+          <TextField
+            label="Solution SQL query"
+            value={solQuery}
+            onChange={(e) => setSolQuery(e.target.value)}
+            size="small"
+            multiline
             rows={10}
-            helperText="Array of { solutionQuery, resultHash, expectedOutput: { columns, rows, rowsCount } }"
+            fullWidth
+            required
+            placeholder="SELECT ..."
+            helperText="The backend will execute this query and store the result as the expected output."
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSolFormOpen(false)} disabled={solFormBusy}>Cancel</Button>
-          <Button variant="contained" onClick={handleSolSave} disabled={solFormBusy || !solForm.questionId || !solForm.datasetId}>
-            {solFormBusy ? <CircularProgress size={18} /> : solEditId ? 'Save' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ═══ Solution Delete Confirm ══════════════════════════════════════════ */}
-      <Dialog open={!!solDeleteId} onClose={() => setSolDeleteId(null)}>
-        <DialogTitle>Delete solution?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">This is a permanent hard delete.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSolDeleteId(null)} disabled={solDeleteBusy}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={handleSolDelete} disabled={solDeleteBusy}>
-            {solDeleteBusy ? <CircularProgress size={18} /> : 'Delete'}
+          <Button variant="contained" onClick={handleSolGenerate} disabled={solFormBusy || !solQuery.trim()}>
+            {solFormBusy ? <CircularProgress size={18} /> : 'Execute & Save'}
           </Button>
         </DialogActions>
       </Dialog>
