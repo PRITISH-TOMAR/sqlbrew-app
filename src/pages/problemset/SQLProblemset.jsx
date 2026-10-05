@@ -14,7 +14,7 @@ export default function SQLProblemset() {
 
   useEffect(() => {
     let alive = true;
-    loadDatasetDetails(dbId).then((res) => { if (alive && res.success) setData(res.data); });
+    loadDatasetDetails(dbId, 'SQL').then((res) => { if (alive && res.success) setData(res.data); });
     return () => { alive = false; };
   }, [dbId]);
 

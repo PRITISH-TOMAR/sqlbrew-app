@@ -107,15 +107,15 @@ export const adminCreateDataset = async (data) => {
 
 export const adminUpdateDataset = async (id, data) => {
   try {
-    const res = await api.put(`/datasets/${id}`, data);
+    const res = await api.put(`/module/${data.dataType}/datasets/${id}`, data);
     if (res.status === 200) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
 };
 
-export const adminDeleteDataset = async (id) => {
+export const adminDeleteDataset = async (id, module) => {
   try {
-    const res = await api.delete(`/datasets/${id}`);
+    const res = await api.delete(`/module/${module}/datasets/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
@@ -165,6 +165,14 @@ export const adminDeleteTestCase = async (id) => {
   try {
     const res = await api.delete(`/testcases/${id}`);
     if (res.status === 200) return ApiResponse.success(res.data.message);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
+export const adminGenerateSolution = async (questionId, data) => {
+  try {
+    const res = await api.post(`/problems/${questionId}/solution/generate`, data);
+    if (res.status === 200 || res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
     return ApiResponse.error(res.data.message);
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
 };

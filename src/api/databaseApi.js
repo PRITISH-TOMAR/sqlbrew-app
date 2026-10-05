@@ -12,6 +12,20 @@ import toast from 'react-hot-toast';
 const DEFAULT_ERROR_MESSAGE = `Can not connect to the server`
 
 
+export const loadDatasetsByModule = async (module, payload) => {
+  try {
+    const response = await api.get(`/module/${module}/datasets`, {
+      params: { page: payload.page, size: payload.size, search: payload.search || '' }
+    });
+    if (response.status === 200) return ApiResponse.success(response.data.message, response.data.data);
+    return ApiResponse.error(response.data.message);
+  } catch (error) {
+    return ApiResponse.error(error.response?.data?.message || DEFAULT_ERROR_MESSAGE);
+  } finally {
+    store.dispatch(setLoading(false));
+  }
+};
+
 export const loadNoSQLDatasets = async (payload) => {
   try {
     const response = await api.get(`/module/NOSQL/datasets`, {
@@ -79,9 +93,9 @@ export const loadSQLDatasets = async (payload) => {
   }
 };
 
-export const loadDatasetDetails = async (payloadId) => {
+export const loadDatasetDetails = async (payloadId, module = 'SQL') => {
   try {
-    const url = `/datasets/${payloadId}`;
+    const url = `/module/${module}/datasets/${payloadId}`;
 
     const response = await api.get(url);
 
