@@ -169,6 +169,14 @@ export const adminDeleteTestCase = async (id) => {
   } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
 };
 
+export const adminGenerateTestCase = async (questionId, data) => {
+  try {
+    const res = await api.post(`/problems/${questionId}/testcases/generate`, data);
+    if (res.status === 201) return ApiResponse.success(res.data.message, res.data.data);
+    return ApiResponse.error(res.data.message);
+  } catch (e) { return ApiResponse.error(e.response?.data?.message || DEFAULT_ERROR); }
+};
+
 export const adminGenerateSolution = async (questionId, data) => {
   try {
     const res = await api.post(`/problems/${questionId}/solution/generate`, data);

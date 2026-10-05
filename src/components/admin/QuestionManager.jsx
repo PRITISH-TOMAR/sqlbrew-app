@@ -19,6 +19,7 @@ import {
   adminCreateTestCase, adminUpdateTestCase, adminDeleteTestCase,
   adminGetSolutionsByQuestion,
   adminGenerateSolution,
+  adminGenerateTestCase,
 } from '../../api/adminApi.js';
 
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
@@ -41,7 +42,7 @@ const slugPreview = (title) => {
 const EMPTY_Q = { title: '', question: '', difficulty: 'MEDIUM', type: '', tags: '', tableNames: [] };
 
 // ── TC form defaults ──────────────────────────────────────────────────────────
-const EMPTY_TC = { questionId: '', type: '', expectedSql: '', testCases: '[]' };
+const EMPTY_TC = { questionId: '', type: '', expectedSql: '' };
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,9 +217,16 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
   const [tcFormBusy, setTcFormBusy] = useState(false);
   const [tcFormErr,  setTcFormErr]  = useState(null);
 
-  // ── TC delete ─────────────────────────────────────────────────────────────
+  // ── TC delete (group) ─────────────────────────────────────────────────────
   const [tcDeleteOpen, setTcDeleteOpen] = useState(false);
   const [tcDeleteBusy, setTcDeleteBusy] = useState(false);
+
+  // ── TC generate (add individual TC) ──────────────────────────────────────
+  const [tcGenOpen,  setTcGenOpen]  = useState(false);
+  const [tcGenBusy,  setTcGenBusy]  = useState(false);
+  const [tcGenErr,   setTcGenErr]   = useState(null);
+  const [tcGenForm,  setTcGenForm]  = useState({ type: 'public', numericTolerance: '', expectedSql: '', groupType: '', sampleData: '[]' });
+  const [expandedTc, setExpandedTc] = useState(null); // tc id that's expanded inline
 
   // ── Solution form dialog (SQL-entry only) ────────────────────────────────
   const [solFormOpen, setSolFormOpen] = useState(false);
@@ -359,21 +367,21 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
       questionId: tc.questionId ?? selected?.id ?? '',
       type: tc.type ?? '',
       expectedSql: tc.expectedSql ?? '',
-      testCases: JSON.stringify(tc.testCases ?? [], null, 2),
     });
     setTcFormErr(null);
     setTcFormOpen(true);
   };
 
   const handleTcSave = async () => {
-    let parsed;
-    try { parsed = JSON.parse(tcForm.testCases); } catch { setTcFormErr('Invalid JSON in test cases'); return; }
     setTcFormBusy(true);
     setTcFormErr(null);
-    const payload = { ...tcForm, testCases: parsed };
-    const res = tcEditId
-      ? await adminUpdateTestCase(tcEditId, payload)
-      : await adminCreateTestCase(payload);
+    const payload = {
+      questionId: tcForm.questionId,
+      type: tcForm.type,
+      expectedSql: tcForm.expectedSql,
+      testCases: tc?.testCases ?? [],
+    };
+    const res = await adminUpdateTestCase(tcEditId, payload);
     setTcFormBusy(false);
     if (res.isSuccess()) { setTcFormOpen(false); setTc(res.getData()); }
     else setTcFormErr(res.message);
@@ -386,6 +394,61 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
     setTcDeleteBusy(false);
     setTcDeleteOpen(false);
     if (res.isSuccess()) setTc(null);
+  };
+
+  const openTcGen = () => {
+    const tables = selected?.tableNames ?? [];
+    const template = JSON.stringify(
+      tables.map((t) => ({ table: t, columns: [], rows: [] })),
+      null, 2
+    );
+    setTcGenForm({ type: 'public', numericTolerance: '', expectedSql: tc?.expectedSql ?? '', groupType: '', sampleData: template });
+    setTcGenErr(null);
+    setTcGenOpen(true);
+  };
+
+  const handleTcGenerate = async () => {
+    let parsedSampleData;
+    try { parsedSampleData = JSON.parse(tcGenForm.sampleData); }
+    catch { setTcGenErr('Sample data is not valid JSON'); return; }
+    if (!Array.isArray(parsedSampleData) || parsedSampleData.length === 0) {
+      setTcGenErr('Sample data must be a non-empty JSON array');
+      return;
+    }
+    const allowedTables = selected?.tableNames ?? [];
+    if (allowedTables.length > 0) {
+      const bad = parsedSampleData.map((e) => e.table).filter((t) => t && !allowedTables.includes(t));
+      if (bad.length > 0) {
+        setTcGenErr(`Table(s) not allowed for this question: ${bad.join(', ')}. Allowed: ${allowedTables.join(', ')}`);
+        return;
+      }
+    }
+    setTcGenBusy(true);
+    setTcGenErr(null);
+    const payload = {
+      type: tcGenForm.type,
+      numericTolerance: tcGenForm.numericTolerance !== '' ? Number(tcGenForm.numericTolerance) : null,
+      sampleData: parsedSampleData,
+      ...(tc == null && { expectedSql: tcGenForm.expectedSql, groupType: tcGenForm.groupType }),
+    };
+    const res = await adminGenerateTestCase(selected.id, payload);
+    setTcGenBusy(false);
+    if (res.isSuccess()) {
+      setTcGenOpen(false);
+      setTc(res.getData());
+    } else {
+      setTcGenErr(res.message);
+    }
+  };
+
+  const handleTcItemDelete = async (tcItemId) => {
+    if (!tc) return;
+    const updated = { ...tc, testCases: tc.testCases.filter((t) => t.id !== tcItemId) };
+    const res = await adminUpdateTestCase(tc.id, {
+      questionId: tc.questionId, type: tc.type,
+      expectedSql: tc.expectedSql, testCases: updated.testCases,
+    });
+    if (res.isSuccess()) setTc(res.getData());
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -538,17 +601,17 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
                   <Typography variant="subtitle2" fontWeight="600">Test Cases</Typography>
                   {tc && <Chip label={`${tc.testCases?.length ?? 0}`} size="small" variant="outlined" sx={{ height: 18, fontSize: 10 }} />}
                 </Box>
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  {tc ? (
-                    <>
-                      <Tooltip title="Edit"><IconButton size="small" onClick={openTcEdit}><EditIcon fontSize="small" /></IconButton></Tooltip>
-                      <Tooltip title="Delete group"><IconButton size="small" color="error" onClick={() => setTcDeleteOpen(true)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
-                    </>
-                  ) : !tcLoading && (
-                    <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openTcCreate}>
-                      Create
-                    </Button>
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                  {tc && (
+                    <Tooltip title="Delete TC group">
+                      <IconButton size="small" color="error" onClick={() => setTcDeleteOpen(true)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   )}
+                  <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={openTcGen} disabled={tcLoading}>
+                    Add TC
+                  </Button>
                 </Box>
               </Box>
 
@@ -556,29 +619,67 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={20} /></Box>
               ) : tc ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {/* Expected SQL */}
-                  {tc.expectedSql && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Expected SQL
-                      </Typography>
-                      <Box component="pre" sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: 11, whiteSpace: 'pre-wrap', overflowX: 'auto', m: 0 }}>
-                        {tc.expectedSql}
-                      </Box>
+                  {/* Expected SQL (read-only + edit) */}
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">Expected SQL</Typography>
+                      <Button size="small" startIcon={<EditIcon />} onClick={openTcEdit}
+                        sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: 11 }}>
+                        Edit
+                      </Button>
                     </Box>
-                  )}
+                    <Box component="pre" sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: 11, whiteSpace: 'pre-wrap', overflowX: 'auto', m: 0 }}>
+                      {tc.expectedSql || <em style={{ opacity: 0.5 }}>none</em>}
+                    </Box>
+                  </Box>
 
-                  {/* Individual test case cards */}
+                  {/* Compact TC rows */}
                   {tc.testCases?.length > 0 ? (
-                    tc.testCases.map((tcase, i) => (
-                      <TcCard key={tcase.id ?? i} index={i} tcase={tcase} />
-                    ))
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      {tc.testCases.map((tcase, i) => {
+                        const key = tcase.id ?? i;
+                        return (
+                          <Box key={key}>
+                            <Paper
+                              variant="outlined"
+                              sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+                              onClick={() => setExpandedTc(expandedTc === key ? null : key)}
+                            >
+                              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 24, fontWeight: 600 }}>#{i + 1}</Typography>
+                              <Chip
+                                label={tcase.type ?? 'UNKNOWN'}
+                                size="small"
+                                color={tcase.type?.toLowerCase() === 'public' ? 'success' : 'default'}
+                                sx={{ fontSize: 10, height: 20 }}
+                              />
+                              {tcase.numericTolerance != null && (
+                                <Chip label={`±${tcase.numericTolerance}`} size="small" variant="outlined" sx={{ fontSize: 10, height: 20 }} />
+                              )}
+                              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                <Tooltip title="Delete TC">
+                                  <IconButton size="small" color="error" sx={{ p: 0.25 }}
+                                    onClick={(e) => { e.stopPropagation(); handleTcItemDelete(tcase.id); }}>
+                                    <DeleteIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                {expandedTc === key ? <ExpandLessIcon sx={{ fontSize: 16, opacity: 0.6 }} /> : <ExpandMoreIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
+                              </Box>
+                            </Paper>
+                            <Collapse in={expandedTc === key}>
+                              <Box sx={{ pl: 1, pt: 0.5, pb: 0.5 }}>
+                                <TcCard index={i} tcase={tcase} />
+                              </Box>
+                            </Collapse>
+                          </Box>
+                        );
+                      })}
+                    </Box>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">No individual test cases in this group.</Typography>
+                    <Typography variant="body2" color="text.secondary">No test cases yet. Click "Add TC" to generate one.</Typography>
                   )}
                 </Box>
               ) : (
-                <Typography variant="body2" color="text.secondary">No test case group found.</Typography>
+                <Typography variant="body2" color="text.secondary">No test case group. Click "Add TC" to create one with expected SQL.</Typography>
               )}
             </Box>
 
@@ -781,28 +882,28 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
         </DialogActions>
       </Dialog>
 
-      {/* ═══ TC Form Dialog ══════════════════════════════════════════════════ */}
-      <Dialog open={tcFormOpen} onClose={() => setTcFormOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{tcEditId ? 'Edit Test Case Group' : 'Create Test Case Group'}</DialogTitle>
+      {/* ═══ TC Form Dialog (Edit expected SQL + group type) ════════════ */}
+      <Dialog open={tcFormOpen} onClose={() => setTcFormOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Test Case Group</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
           {tcFormErr && <Alert severity="error">{tcFormErr}</Alert>}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField label="Question ID" value={tcForm.questionId} onChange={(e) => setTcForm({ ...tcForm, questionId: e.target.value })} size="small" required fullWidth />
-            <TextField label="Type" value={tcForm.type} onChange={(e) => setTcForm({ ...tcForm, type: e.target.value })} size="small" fullWidth placeholder="e.g. SQL" />
-          </Box>
-          <TextField label="Expected SQL" value={tcForm.expectedSql} onChange={(e) => setTcForm({ ...tcForm, expectedSql: e.target.value })} size="small" multiline rows={3} fullWidth />
-          <JsonField
-            label="Test Cases (JSON array)"
-            value={tcForm.testCases}
-            onChange={(v) => setTcForm((f) => ({ ...f, testCases: v }))}
-            rows={8}
-            helperText="Array of { id, type, numericTolerance, sampleData, expectedOutput }"
+          <TextField
+            label="Group Type"
+            value={tcForm.type}
+            onChange={(e) => setTcForm({ ...tcForm, type: e.target.value })}
+            size="small" fullWidth placeholder="e.g. DQL"
+          />
+          <TextField
+            label="Expected SQL"
+            value={tcForm.expectedSql}
+            onChange={(e) => setTcForm({ ...tcForm, expectedSql: e.target.value })}
+            size="small" multiline rows={5} fullWidth
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setTcFormOpen(false)} disabled={tcFormBusy}>Cancel</Button>
-          <Button variant="contained" onClick={handleTcSave} disabled={tcFormBusy || !tcForm.questionId}>
-            {tcFormBusy ? <CircularProgress size={18} /> : tcEditId ? 'Save' : 'Create'}
+          <Button variant="contained" onClick={handleTcSave} disabled={tcFormBusy}>
+            {tcFormBusy ? <CircularProgress size={18} /> : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -817,6 +918,66 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
           <Button onClick={() => setTcDeleteOpen(false)} disabled={tcDeleteBusy}>Cancel</Button>
           <Button color="error" variant="contained" onClick={handleTcDelete} disabled={tcDeleteBusy}>
             {tcDeleteBusy ? <CircularProgress size={18} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ═══ TC Generate Dialog ══════════════════════════════════════════════ */}
+      <Dialog open={tcGenOpen} onClose={() => setTcGenOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Test Case</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          {tcGenErr && <Alert severity="error">{tcGenErr}</Alert>}
+          <TextField
+            select label="Type" value={tcGenForm.type}
+            onChange={(e) => setTcGenForm({ ...tcGenForm, type: e.target.value })}
+            size="small" fullWidth
+          >
+            <MenuItem value="public">PUBLIC</MenuItem>
+            <MenuItem value="private">PRIVATE</MenuItem>
+          </TextField>
+          <TextField
+            label="Numeric Tolerance (optional)"
+            value={tcGenForm.numericTolerance}
+            onChange={(e) => setTcGenForm({ ...tcGenForm, numericTolerance: e.target.value })}
+            size="small" type="number" fullWidth
+            placeholder="e.g. 0.01"
+          />
+          <JsonField
+            label="Sample Data *"
+            value={tcGenForm.sampleData}
+            onChange={(v) => setTcGenForm((f) => ({ ...f, sampleData: v }))}
+            rows={8}
+            helperText={
+              selected?.tableNames?.length
+                ? `Allowed tables: ${selected.tableNames.join(', ')} — shape: [{ "table", "columns", "rows" }]`
+                : 'Shape: [{ "table": "...", "columns": [...], "rows": [[...], ...] }]'
+            }
+          />
+          {tc == null && (
+            <>
+              <TextField
+                label="Group Type (optional)"
+                value={tcGenForm.groupType}
+                onChange={(e) => setTcGenForm({ ...tcGenForm, groupType: e.target.value })}
+                size="small" fullWidth placeholder="e.g. DQL"
+              />
+              <TextField
+                label="Expected SQL *"
+                value={tcGenForm.expectedSql}
+                onChange={(e) => setTcGenForm({ ...tcGenForm, expectedSql: e.target.value })}
+                size="small" multiline rows={5} fullWidth required
+                helperText="Required once to create the group. The engine runs this against the seed data to produce expectedOutput."
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTcGenOpen(false)} disabled={tcGenBusy}>Cancel</Button>
+          <Button
+            variant="contained" onClick={handleTcGenerate}
+            disabled={tcGenBusy || !tcGenForm.sampleData.trim() || (tc == null && !tcGenForm.expectedSql.trim())}
+          >
+            {tcGenBusy ? <CircularProgress size={18} /> : 'Generate'}
           </Button>
         </DialogActions>
       </Dialog>
