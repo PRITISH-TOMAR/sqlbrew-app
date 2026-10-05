@@ -381,7 +381,7 @@ export default function ContentTab() {
               Close
             </Button>
           </Box>
-          <QuestionManager datasetId={selectedDataset.id} />
+          <QuestionManager dataset={selectedDataset} />
         </Box>
       )}
 

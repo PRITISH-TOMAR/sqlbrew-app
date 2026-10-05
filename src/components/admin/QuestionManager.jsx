@@ -4,7 +4,7 @@ import {
   TextField, MenuItem, Table, TableHead, TableBody, TableRow, TableCell,
   TableContainer, Paper, IconButton, Chip, Typography, Alert,
   CircularProgress, Tooltip, FormControl, InputLabel, Select,
-  Drawer, Divider, Stack, Collapse,
+  Drawer, Divider, Stack, Collapse, Checkbox, ListItemText, OutlinedInput,
 } from '@mui/material';
 import EditIcon       from '@mui/icons-material/EditOutlined';
 import DeleteIcon     from '@mui/icons-material/DeleteOutlined';
@@ -26,8 +26,19 @@ const toArray = (s) => (s ? s.split(',').map((x) => x.trim()).filter(Boolean) : 
 const toStr   = (a) => (Array.isArray(a) ? a.join(', ') : a ?? '');
 const DIFF_COLOR = { EASY: 'success', MEDIUM: 'warning', HARD: 'error' };
 
+// ── Slug preview (mirrors backend generateSlug) ───────────────────────────────
+const slugPreview = (title) => {
+  if (!title?.trim()) return '';
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const titlePart = title.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-');
+  return `${titlePart}-${yy}${mm}${dd}`;
+};
+
 // ── Question form defaults ────────────────────────────────────────────────────
-const EMPTY_Q = { datasetId: '', title: '', question: '', difficulty: 'MEDIUM', type: '', tags: '', tableNames: '' };
+const EMPTY_Q = { title: '', question: '', difficulty: 'MEDIUM', type: '', tags: '', tableNames: [] };
 
 // ── TC form defaults ──────────────────────────────────────────────────────────
 const EMPTY_TC = { questionId: '', type: '', expectedSql: '', testCases: '[]' };
@@ -163,14 +174,15 @@ function TcCard({ index, tcase }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
+export default function QuestionManager({ dataset: externalDataset = null }) {
   // ── Dataset + question list ───────────────────────────────────────────────
   const [datasets,  setDatasets]  = useState([]);
   const [datasetId, setDatasetId] = useState('');
   const [questions, setQuestions] = useState([]);
 
-  // When parent controls the dataset, mirror it
+  const externalDatasetId = externalDataset?.id ?? '';
   const effectiveDatasetId = externalDatasetId || datasetId;
+  const effectiveDataset = externalDataset || datasets.find((d) => d.id === datasetId) || null;
   const [qLoading,  setQLoading]  = useState(false);
   const [listError, setListError] = useState(null);
 
@@ -226,14 +238,14 @@ export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
 
   // Reload questions whenever the external dataset changes
   useEffect(() => {
-    if (externalDatasetId) {
+    if (externalDataset?.id) {
       setQuestions([]);
-      loadQuestions(externalDatasetId);
+      loadQuestions(externalDataset.id);
     } else {
       setQuestions([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalDatasetId]);
+  }, [externalDataset?.id]);
 
   const loadQuestions = (dsId) => {
     if (!dsId) return;
@@ -284,7 +296,7 @@ export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
   // ─────────────────────────────────────────────────────────────────────────
   const openQCreate = () => {
     setQEditingId(null);
-    setQForm({ ...EMPTY_Q, datasetId: effectiveDatasetId });
+    setQForm({ ...EMPTY_Q });
     setQFormErr(null);
     setQFormOpen(true);
   };
@@ -292,10 +304,10 @@ export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
   const openQEdit = (q) => {
     setQEditingId(q.id);
     setQForm({
-      datasetId: q.datasetId ?? effectiveDatasetId,
       title: q.title ?? '', question: q.question ?? '',
       difficulty: q.difficulty ?? 'MEDIUM', type: q.type ?? '',
-      tags: toStr(q.tags), tableNames: toStr(q.tableNames),
+      tags: toStr(q.tags),
+      tableNames: Array.isArray(q.tableNames) ? q.tableNames : toArray(q.tableNames),
     });
     setQFormErr(null);
     setQFormOpen(true);
@@ -304,7 +316,12 @@ export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
   const handleQSave = async () => {
     setQFormBusy(true);
     setQFormErr(null);
-    const payload = { ...qForm, tags: toArray(qForm.tags), tableNames: toArray(qForm.tableNames) };
+    const payload = {
+      datasetId: effectiveDatasetId,
+      ...qForm,
+      tags: toArray(qForm.tags),
+      tableNames: qForm.tableNames,
+    };
     const res = qEditingId
       ? await adminUpdateQuestion(qEditingId, payload)
       : await adminCreateQuestion(payload);
@@ -658,21 +675,93 @@ export default function QuestionManager({ datasetId: externalDatasetId = '' }) {
         <DialogTitle>{qEditingId ? 'Edit Question' : 'New Question'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
           {qFormErr && <Alert severity="error">{qFormErr}</Alert>}
-          <TextField label="Dataset ID" value={qForm.datasetId} onChange={(e) => setQForm({ ...qForm, datasetId: e.target.value })} size="small" required fullWidth />
-          <TextField label="Title" value={qForm.title} onChange={(e) => setQForm({ ...qForm, title: e.target.value })} size="small" required fullWidth />
-          <TextField label="Problem statement" value={qForm.question} onChange={(e) => setQForm({ ...qForm, question: e.target.value })} size="small" multiline rows={4} fullWidth />
+
+          {/* Dataset info (non-editable) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" color="text.secondary">Dataset:</Typography>
+            <Typography variant="body2" fontWeight={500}>{effectiveDataset?.title ?? effectiveDatasetId}</Typography>
+            {effectiveDataset?.dataType && (
+              <Chip label={effectiveDataset.dataType} size="small" variant="outlined" />
+            )}
+          </Box>
+
+          {/* Title */}
+          <TextField
+            label="Title *" value={qForm.title}
+            onChange={(e) => setQForm({ ...qForm, title: e.target.value })}
+            size="small" fullWidth
+          />
+
+          {/* Slug preview */}
+          {qForm.title.trim() && (
+            <Typography variant="caption" color="text.secondary">
+              Slug (auto): <code>{slugPreview(qForm.title)}</code>
+            </Typography>
+          )}
+
+          {/* Problem statement */}
+          <TextField
+            label="Problem Statement *" value={qForm.question}
+            onChange={(e) => setQForm({ ...qForm, question: e.target.value })}
+            size="small" multiline rows={4} fullWidth
+          />
+
+          {/* Difficulty + Type */}
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField select label="Difficulty" value={qForm.difficulty} onChange={(e) => setQForm({ ...qForm, difficulty: e.target.value })} size="small" fullWidth>
+            <TextField
+              select label="Difficulty *" value={qForm.difficulty}
+              onChange={(e) => setQForm({ ...qForm, difficulty: e.target.value })}
+              size="small" fullWidth
+            >
               {DIFFICULTIES.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
             </TextField>
-            <TextField label="Type" value={qForm.type} onChange={(e) => setQForm({ ...qForm, type: e.target.value })} size="small" fullWidth placeholder="e.g. SELECT" />
+            <TextField
+              label="Type" value={qForm.type}
+              onChange={(e) => setQForm({ ...qForm, type: e.target.value })}
+              size="small" fullWidth placeholder="e.g. SELECT"
+            />
           </Box>
-          <TextField label="Tags (comma-separated)" value={qForm.tags} onChange={(e) => setQForm({ ...qForm, tags: e.target.value })} size="small" fullWidth />
-          <TextField label="Table Names (comma-separated)" value={qForm.tableNames} onChange={(e) => setQForm({ ...qForm, tableNames: e.target.value })} size="small" fullWidth />
+
+          {/* Tags */}
+          <TextField
+            label="Tags * (comma-separated)" value={qForm.tags}
+            onChange={(e) => setQForm({ ...qForm, tags: e.target.value })}
+            size="small" fullWidth
+          />
+
+          {/* Tables multi-select */}
+          {(effectiveDataset?.tableNames?.length > 0) ? (
+            <FormControl size="small" fullWidth>
+              <InputLabel>Tables</InputLabel>
+              <Select
+                multiple
+                value={qForm.tableNames}
+                onChange={(e) => setQForm({ ...qForm, tableNames: e.target.value })}
+                input={<OutlinedInput label="Tables" />}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                {effectiveDataset.tableNames.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    <Checkbox checked={qForm.tableNames.includes(name)} size="small" />
+                    <ListItemText primary={name} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : (
+            <TextField
+              label="Tables (comma-separated)" value={toStr(qForm.tableNames)}
+              onChange={(e) => setQForm({ ...qForm, tableNames: toArray(e.target.value) })}
+              size="small" fullWidth placeholder="No tables defined on dataset"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setQFormOpen(false)} disabled={qFormBusy}>Cancel</Button>
-          <Button variant="contained" onClick={handleQSave} disabled={qFormBusy || !qForm.datasetId || !qForm.title}>
+          <Button
+            variant="contained" onClick={handleQSave}
+            disabled={qFormBusy || !qForm.title.trim() || !qForm.question.trim() || !qForm.difficulty || toArray(qForm.tags).length === 0}
+          >
             {qFormBusy ? <CircularProgress size={18} /> : qEditingId ? 'Save' : 'Create'}
           </Button>
         </DialogActions>
