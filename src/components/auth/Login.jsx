@@ -7,7 +7,7 @@ import {
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { forgotPassword, loginUser } from '../../api/authApi';
 
@@ -20,6 +20,7 @@ const validateEmail = (email) => {
 export default function Login({ onSwitchToSignup }) {
   const loading  = useSelector((s) => s.auth.loading);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
   const [showPw,   setShowPw]   = useState(false);
@@ -31,7 +32,7 @@ export default function Login({ onSwitchToSignup }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const res = await loginUser(formData);
-    if (res.success) navigate('/');
+    if (res.success) navigate(location.state?.from || '/', { replace: true });
   };
 
   const handleForgotPassword = async (e) => {

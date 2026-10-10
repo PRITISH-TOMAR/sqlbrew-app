@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import LockIcon from '@mui/icons-material/LockOutlined';
@@ -52,13 +52,21 @@ const VECTORDB_FEATURES = [
 
 const MODULE_NAMES = { SQL: 'SQL', NOSQL: 'NoSQL', VECTORDB: 'Vector Database' };
 
+// Sends guests to /login and remembers where they were going, so sign-in can bring them back
 function ProtectedRoute() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return isAuthenticated
+    ? <Outlet />
+    : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
 }
 
-function ModuleGuard({ moduleKey }) {
+// allowGuests: signed-out visitors may browse (the module config only exists for signed-in users)
+function ModuleGuard({ moduleKey, allowGuests = false }) {
+  const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const { data, loading } = useSelector((s) => s.config);
+
+  if (allowGuests && !isAuthenticated) return <Outlet />;
 
   if (loading || !data) {
     return (
@@ -88,6 +96,11 @@ function ModuleGuard({ moduleKey }) {
   return <Outlet />;
 }
 
+function RedirectAfterLogin() {
+  const location = useLocation();
+  return <Navigate to={location.state?.from || '/'} replace />;
+}
+
 export default function Routing() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
 
@@ -95,15 +108,12 @@ export default function Routing() {
     <Routes>
       {/* Public routes */}
       <Route path="/"             element={<Dashboard />} />
-      <Route path="/login"        element={isAuthenticated ? <Navigate to="/" replace /> : <AuthContainer />} />
+      <Route path="/login"        element={isAuthenticated ? <RedirectAfterLogin /> : <AuthContainer />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
 
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
-
-        {/* SQL */}
-        <Route element={<ModuleGuard moduleKey="SQL" />}>
-          <Route path="/sql" element={
+      {/* SQL dataset list: public, so visitors can browse before signing up */}
+      <Route element={<ModuleGuard moduleKey="SQL" allowGuests />}>
+        <Route path="/sql" element={
             <DatasetGrid
               fetchFn={loadSQLDatasets}
               basePath="/sql"
@@ -118,6 +128,13 @@ export default function Routing() {
               ctaLabel="Open dataset"
             />
           } />
+      </Route>
+
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+
+        {/* SQL: problems and the solver need an account */}
+        <Route element={<ModuleGuard moduleKey="SQL" />}>
           <Route path="/sql/:dbId"            element={<SQLProblemset />} />
           <Route path="/sql/:dbId/:problemId" element={<ProblemSolver />} />
         </Route>

@@ -9,7 +9,7 @@ import LockIcon from '@mui/icons-material/LockOutlined';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { sendVerificationLink, signupUser, loginUser } from '../../api/authApi';
 import { CountryCodeDropdown } from '../../utils/classes/CountryCodeDropDown.jsx';
@@ -36,6 +36,7 @@ const validateForm = (formData) => {
 export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloadedEmailKey = null }) {
   const loading  = useSelector((s) => s.auth.loading);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', countryCode: '+91',
@@ -63,7 +64,7 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
     const res = await signupUser(payload);
     if (res.success) {
       const loginRes = await loginUser({ email: formData.email, password: formData.password, rememberMe: false });
-      if (loginRes.success) navigate('/', { replace: true });
+      if (loginRes.success) navigate(location.state?.from || '/', { replace: true });
     }
   };
 
