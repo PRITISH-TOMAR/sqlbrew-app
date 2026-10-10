@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import {
@@ -19,8 +19,10 @@ import HGripIcon from '@mui/icons-material/DragIndicatorRounded';
 import FileIcon from '@mui/icons-material/DataObjectRounded';
 import SchemaIcon from '@mui/icons-material/TableChartRounded';
 import ProblemIcon from '@mui/icons-material/SubjectRounded';
-import { loadProblemDetails, runSQLQuery, submitSQLQuery, getJobResult } from '../../api/databaseApi';
-import { SQLTestComparison } from '../../components/judge';
+import SolvedIcon from '@mui/icons-material/TaskAltRounded';
+import { loadProblemDetails, runSQLQuery, submitSQLQuery, getJobResult, loadSQLQuestionSet } from '../../api/databaseApi';
+import { SQLTestComparison, SolvedCelebration } from '../../components/judge';
+import { isProblemSolved, markProblemSolved, isSolvedFromApi } from '../../utils/helpers/solvedProblems';
 
 const DIFFICULTY_COLOR = { easy: 'success', medium: 'warning', hard: 'error' };
 
@@ -127,7 +129,7 @@ function ExampleBlock({ index, tc }) {
 }
 
 // ── Problem description panel (left) ──────────────────────────────────────────
-function ProblemPanel({ problem, loading, testCases, tcLoading }) {
+function ProblemPanel({ problem, loading, testCases, tcLoading, solved }) {
   const [tab, setTab] = useState(0); // 0 = Problem, 1 = Schema
   const [showTags, setShowTags] = useState(false);
 
@@ -150,9 +152,28 @@ function ProblemPanel({ problem, loading, testCases, tcLoading }) {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Title + badges */}
       <Box sx={{ px: 3, pt: 3, pb: 2, flexShrink: 0 }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          {q?.title || '—'}
-        </Typography>
+        <Stack direction="row" alignItems="flex-start" gap={1.5} sx={{ mb: 1 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+            {q?.title || '—'}
+          </Typography>
+          {solved && (
+            <Chip
+              icon={<SolvedIcon sx={{ fontSize: 16 }} />}
+              label="Solved"
+              size="small"
+              color="success"
+              sx={{
+                fontWeight: 700, flexShrink: 0, mt: 0.25,
+                animation: 'solvedPop 0.4s ease-out',
+                '@keyframes solvedPop': {
+                  '0%': { transform: 'scale(0.6)', opacity: 0 },
+                  '70%': { transform: 'scale(1.1)', opacity: 1 },
+                  '100%': { transform: 'scale(1)' },
+                },
+              }}
+            />
+          )}
+        </Stack>
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
           {q?.difficulty && (
             <Chip
@@ -375,15 +396,31 @@ export default function ProblemSolver() {
   const location = useLocation();
   const theme    = useTheme();
 
-  const problemIds  = location.state?.problemIds;
-  const currentIndex = problemIds ? problemIds.indexOf(problemId) : -1;
+  // Problems of this dataset — fetched so prev/next works even on a direct link / refresh
+  const [problemList, setProblemList] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    loadSQLQuestionSet(dbId).then((res) => {
+      if (alive && res.success && Array.isArray(res.data)) setProblemList(res.data);
+    });
+    return () => { alive = false; };
+  }, [dbId]);
+
+  const problemIds = useMemo(() => {
+    if (problemList.length) return problemList.map((p) => String(p?.id));
+    return (location.state?.problemIds || []).map(String);
+  }, [problemList, location.state]);
+
+  const currentIndex = problemIds.indexOf(String(problemId));
   const prevId = currentIndex > 0 ? problemIds[currentIndex - 1] : null;
-  const nextId = currentIndex !== -1 && currentIndex < (problemIds?.length ?? 0) - 1
+  const nextId = currentIndex !== -1 && currentIndex < problemIds.length - 1
     ? problemIds[currentIndex + 1]
     : null;
+  const titleOf = (id) => problemList.find((p) => String(p?.id) === String(id))?.title;
 
   const goToProblem = (id) => {
     if (!id) return;
+    setCelebrate(false);
     navigate(`/sql/${dbId}/${id}`, { state: { problemIds } });
   };
 
@@ -394,6 +431,9 @@ export default function ProblemSolver() {
   const [result,     setResult]     = useState(null);
   const [running,    setRunning]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [solved,     setSolved]     = useState(false);
+  const [celebrate,  setCelebrate]  = useState(false);
+  const [firstSolve, setFirstSolve] = useState(false);
 
   // Split sizes
   const [leftWidth,    setLeftWidth]    = useState(40);
@@ -403,13 +443,32 @@ export default function ProblemSolver() {
   const draggingV     = useRef(false);
 
   useEffect(() => {
+    let alive = true;
     setLoading(true);
     setResult(null);
+    setCelebrate(false);
+    setSolved(isProblemSolved(problemId));
     loadProblemDetails(problemId).then((res) => {
-      if (res.success) setProblem(res.data);
+      if (!alive) return;
+      if (res.success) {
+        setProblem(res.data);
+        if (isSolvedFromApi(res.data) || isSolvedFromApi(res.data?.question)) {
+          markProblemSolved(problemId);
+          setSolved(true);
+        }
+      }
       setLoading(false);
     });
+    return () => { alive = false; };
   }, [problemId]);
+
+  // Called once a submission comes back ACCEPTED
+  const handleAccepted = () => {
+    setFirstSolve(!solved);
+    markProblemSolved(problemId);
+    setSolved(true);
+    setCelebrate(true);
+  };
 
   const handleRun = async () => {
     if (!query.trim()) return;
@@ -434,6 +493,7 @@ export default function ProblemSolver() {
     if (!jobId) {
       setResult(res.data);
       setSubmitting(false);
+      if (res.data?.result === 'ACCEPTED') handleAccepted();
       return;
     }
     // Poll until engine worker finishes
@@ -447,6 +507,7 @@ export default function ProblemSolver() {
       if (jobRes.success && jobRes.data?.result && jobRes.data.result !== 'PENDING') {
         setResult(jobRes.data);
         setSubmitting(false);
+        if (jobRes.data.result === 'ACCEPTED') handleAccepted();
       } else {
         setTimeout(() => poll(attempts + 1), 1500);
       }
@@ -505,8 +566,16 @@ export default function ProblemSolver() {
   return (
     <Box
       ref={containerRef}
-      sx={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}
+      sx={{ position: 'relative', display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}
     >
+      <SolvedCelebration
+        open={celebrate}
+        firstSolve={firstSolve}
+        hasNext={Boolean(nextId)}
+        onClose={() => setCelebrate(false)}
+        onNext={() => goToProblem(nextId)}
+      />
+
       {/* ── LEFT: Problem ── */}
       <Box
         sx={{
@@ -526,25 +595,36 @@ export default function ProblemSolver() {
             </IconButton>
           </Tooltip>
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-          <Tooltip title="Previous problem">
-            <span>
-              <IconButton size="small" disabled={!prevId} onClick={() => goToProblem(prevId)}>
-                <PrevIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Next problem">
-            <span>
-              <IconButton size="small" disabled={!nextId} onClick={() => goToProblem(nextId)}>
-                <NextIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          {currentIndex !== -1 && problemIds?.length > 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-              {currentIndex + 1} of {problemIds.length}
+          {currentIndex !== -1 && problemIds.length > 0 && (
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              Problem {currentIndex + 1} of {problemIds.length}
             </Typography>
           )}
+          <Box sx={{ flex: 1 }} />
+          <Tooltip title={prevId ? `Previous: ${titleOf(prevId) || 'problem'}` : 'No previous problem'}>
+            <span>
+              <Button
+                size="small" color="inherit" disabled={!prevId}
+                startIcon={<PrevIcon />}
+                onClick={() => goToProblem(prevId)}
+                sx={{ minWidth: 0, px: 1, textTransform: 'none', fontWeight: 600 }}
+              >
+                Prev
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title={nextId ? `Next: ${titleOf(nextId) || 'problem'}` : 'No next problem'}>
+            <span>
+              <Button
+                size="small" color="inherit" disabled={!nextId}
+                endIcon={<NextIcon />}
+                onClick={() => goToProblem(nextId)}
+                sx={{ minWidth: 0, px: 1, textTransform: 'none', fontWeight: 600 }}
+              >
+                Next
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
 
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
@@ -553,6 +633,7 @@ export default function ProblemSolver() {
             loading={loading}
             testCases={problem?.testCases || []}
             tcLoading={loading}
+            solved={solved}
           />
         </Box>
       </Box>

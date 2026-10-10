@@ -5,6 +5,9 @@ import {
 import StarIcon from '@mui/icons-material/StarBorderOutlined';
 import BookmarkIcon from '@mui/icons-material/BookmarkBorderOutlined';
 import LockIcon from '@mui/icons-material/LockOutlined';
+import SolvedIcon from '@mui/icons-material/TaskAltRounded';
+import { Tooltip } from '@mui/material';
+import { getSolvedIds, isSolvedFromApi } from '../../utils/helpers/solvedProblems';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const LEVEL_CHIP = {
@@ -13,7 +16,7 @@ const LEVEL_CHIP = {
   hard:   { color: 'error',   label: 'Hard' },
 };
 
-function ProblemRow({ index, item, dbId, problemIds }) {
+function ProblemRow({ index, item, dbId, problemIds, solved }) {
   const theme    = useTheme();
   const navigate = useNavigate();
   const level = item?.difficulty?.toLowerCase();
@@ -35,6 +38,11 @@ function ProblemRow({ index, item, dbId, problemIds }) {
           <Typography variant="body2" fontWeight={500}>
             {item?.title}
           </Typography>
+          {solved && (
+            <Tooltip title="Solved">
+              <SolvedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+            </Tooltip>
+          )}
           {item?.locked && (
             <LockIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
           )}
@@ -81,6 +89,7 @@ function SkeletonRow() {
 export default function ProblemsList({ items, loading }) {
   const { dbId } = useParams();
   const problemIds = items.map((item) => item?.id);
+  const solvedIds  = getSolvedIds();
   return (
     <TableContainer
       component={Paper}
@@ -108,7 +117,8 @@ export default function ProblemsList({ items, loading }) {
           {loading
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} />)
             : items.map((item, idx) => (
-                <ProblemRow key={item?.id} index={idx + 1} item={item} dbId={dbId} problemIds={problemIds} />
+                <ProblemRow key={item?.id} index={idx + 1} item={item} dbId={dbId} problemIds={problemIds}
+                  solved={solvedIds.has(String(item?.id)) || isSolvedFromApi(item)} />
               ))
           }
         </TableBody>
