@@ -365,7 +365,7 @@ export default function ContentTab() {
         <Box
           sx={{
             mt: 3,
-            border: '1px solid rgba(255,255,255,0.15)',
+            border: '1px solid', borderColor: 'divider',
             borderRadius: '10px',
             p: 2,
           }}

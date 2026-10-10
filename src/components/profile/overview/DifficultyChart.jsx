@@ -1,14 +1,14 @@
-import { Box, Typography, Paper, Skeleton } from '@mui/material';
+import { Box, Typography, Paper, Skeleton, useTheme } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 
 const SEGMENTS = [
-  { key: 'easy',   label: 'Easy',   color: '#22c55e' },
-  { key: 'medium', label: 'Medium', color: '#f59e0b' },
-  { key: 'hard',   label: 'Hard',   color: '#ef4444' },
+  { key: 'easy',   label: 'Easy' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'hard',   label: 'Hard' },
 ];
 
 // SVG donut: each segment uses stroke-dasharray on a shared circle
-function DonutChart({ segments, total, size = 120, stroke = 18 }) {
+function DonutChart({ segments, total, track, size = 120, stroke = 14 }) {
   const r = (size - stroke) / 2;
   const cx = size / 2;
   const cy = size / 2;
@@ -24,7 +24,7 @@ function DonutChart({ segments, total, size = 120, stroke = 18 }) {
       style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}
     >
       {/* Background track */}
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(128,128,128,0.15)" strokeWidth={stroke} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={track} strokeWidth={stroke} />
       {total > 0 && segments.map((seg) => {
         const dash = (seg.value / total) * circ;
         const gap  = circ - dash;
@@ -37,7 +37,7 @@ function DonutChart({ segments, total, size = 120, stroke = 18 }) {
             fill="none"
             stroke={seg.color}
             strokeWidth={stroke}
-            strokeDasharray={`${dash} ${gap}`}
+            strokeDasharray={`${Math.max(dash - 2, 0)} ${gap + 2}`}
             strokeDashoffset={-offset}
             strokeLinecap="butt"
           />
@@ -50,15 +50,17 @@ function DonutChart({ segments, total, size = 120, stroke = 18 }) {
 }
 
 export default function DifficultyChart({ data, loading }) {
+  const theme  = useTheme();
+  const diff   = theme.palette.difficulty;
   const easy   = data?.easy   ?? 0;
   const medium = data?.medium ?? 0;
   const hard   = data?.hard   ?? 0;
   const total  = easy + medium + hard;
 
   const segs = [
-    { key: 'easy',   value: easy,   color: '#22c55e' },
-    { key: 'medium', value: medium, color: '#f59e0b' },
-    { key: 'hard',   value: hard,   color: '#ef4444' },
+    { key: 'easy',   value: easy,   color: diff.easy },
+    { key: 'medium', value: medium, color: diff.medium },
+    { key: 'hard',   value: hard,   color: diff.hard },
   ];
 
   return (
@@ -82,7 +84,7 @@ export default function DifficultyChart({ data, loading }) {
         <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Donut */}
           <Box sx={{ position: 'relative', flexShrink: 0 }}>
-            <DonutChart segments={segs} total={total || 1} />
+            <DonutChart segments={segs} total={total || 1} track={theme.palette.background.subtle} />
             <Box
               sx={{
                 position: 'absolute',
@@ -100,7 +102,8 @@ export default function DifficultyChart({ data, loading }) {
 
           {/* Legend */}
           <Box sx={{ flex: 1, minWidth: 80 }}>
-            {SEGMENTS.map(({ key, label, color }) => {
+            {SEGMENTS.map(({ key, label }) => {
+              const color = diff[key];
               const val = data?.[key] ?? 0;
               return (
                 <Box key={key} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
@@ -108,7 +111,7 @@ export default function DifficultyChart({ data, loading }) {
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
                     <Typography variant="body2" color="text.secondary">{label}</Typography>
                   </Box>
-                  <Typography variant="body2" fontWeight={600}>{val}</Typography>
+                  <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>{val}</Typography>
                 </Box>
               );
             })}

@@ -69,7 +69,7 @@ function JsonField({ label, value, onChange, rows = 8, helperText }) {
 function MiniTable({ columns, rows }) {
   if (!columns?.length) return null;
   return (
-    <TableContainer sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 1 }}>
+    <TableContainer sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
@@ -727,7 +727,7 @@ export default function QuestionManager({ dataset: externalDataset = null }) {
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                           Expected Output
                         </Typography>
-                        <TableContainer sx={{ maxHeight: 260, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 1 }}>
+                        <TableContainer sx={{ maxHeight: 260, overflowY: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                           <Table size="small" stickyHeader>
                             <TableHead>
                               <TableRow>

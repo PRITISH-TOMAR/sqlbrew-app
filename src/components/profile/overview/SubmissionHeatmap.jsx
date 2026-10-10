@@ -43,12 +43,10 @@ function buildGrid(dataArr, weeks) {
   return { grid, monthMarks };
 }
 
+// Garnet ramp: empty → light rose → deep crimson (see palette.heat)
 function cellBg(count, theme) {
-  if (count === 0) return theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
-  if (count === 1) return '#166534';
-  if (count === 2) return '#15803d';
-  if (count === 3) return '#16a34a';
-  return '#22c55e';
+  const heat = theme.palette.heat;
+  return heat[Math.min(Math.max(count, 0), heat.length - 1)];
 }
 
 const CELL = 12;
