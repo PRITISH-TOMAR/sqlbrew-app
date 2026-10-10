@@ -27,9 +27,9 @@ const HERO_ICON = { rose: '#F08A97', green: '#7FD8A6', amber: '#F5B544', blue: '
 // ─── SQL — Garnet (brand) ────────────────────────────────────────────────────
 const SQL_COLOR    = undefined; // use theme primary
 const SQL_FEATURES = [
-  { icon: <PracticeIcon  sx={{ fontSize: 18, color: HERO_ICON.rose  }} />, label: 'Hands-on Practice',   description: 'Real-world datasets'    },
-  { icon: <StructuredIcon sx={{ fontSize: 18, color: HERO_ICON.green }} />, label: 'Structured Learning', description: 'From basics to advanced' },
-  { icon: <TrophyIcon    sx={{ fontSize: 18, color: HERO_ICON.amber }} />, label: 'Build Your Skills',   description: 'Solve challenges'       },
+  { icon: <PracticeIcon  sx={{ fontSize: 18, color: HERO_ICON.rose  }} />, label: 'Hands-on practice',   description: 'Real-world datasets'    },
+  { icon: <StructuredIcon sx={{ fontSize: 18, color: HERO_ICON.green }} />, label: 'Structured learning', description: 'From basics to advanced' },
+  { icon: <TrophyIcon    sx={{ fontSize: 18, color: HERO_ICON.amber }} />, label: 'Instant feedback',    description: 'Judged on hidden tests'       },
 ];
 
 // ─── NoSQL — Green ───────────────────────────────────────────────────────────
@@ -108,14 +108,14 @@ export default function Routing() {
               fetchFn={loadSQLDatasets}
               basePath="/sql"
               accentColor={SQL_COLOR}
-              badge="LEARN • PRACTICE • GROW"
-              title="Database"
-              titleHighlight="Learning Paths"
-              subtitle="Explore our comprehensive database courses and challenges"
+              badge="SQL"
+              title="Practise SQL on"
+              titleHighlight="real datasets"
+              subtitle="Each dataset is a real schema with its own set of problems, from simple filters to window functions. Pick one to start."
               features={SQL_FEATURES}
               pageKey="sql"
               cardLabel="Dataset"
-              ctaLabel="Start Learning"
+              ctaLabel="Open dataset"
             />
           } />
           <Route path="/sql/:dbId"            element={<SQLProblemset />} />
@@ -135,14 +135,14 @@ export default function Routing() {
               fetchFn={loadNoSQLDatasets}
               basePath="/nosql"
               accentColor={NOSQL_COLOR}
-              badge="DOCUMENTS • KEY-VALUE • GRAPHS"
-              title="NoSQL"
-              titleHighlight="Collections"
-              subtitle="Master non-relational databases with real-world document and graph datasets"
+              badge="NOSQL"
+              title="Practise NoSQL on"
+              titleHighlight="real collections"
+              subtitle="Work with document and key-value data, then query it with aggregation pipelines and indexes."
               features={NOSQL_FEATURES}
               pageKey="nosql"
               cardLabel="Collection"
-              ctaLabel="Explore Collection"
+              ctaLabel="Open collection"
             />
           } />
         </Route>
@@ -154,14 +154,14 @@ export default function Routing() {
               fetchFn={loadVectorDBDatasets}
               basePath="/vectordb"
               accentColor={VECTORDB_COLOR}
-              badge="EMBEDDINGS • SEARCH • AI"
-              title="Vector"
-              titleHighlight="Databases"
-              subtitle="Learn vector search and semantic similarity with AI-powered dataset challenges"
+              badge="VECTOR DATABASE"
+              title="Practise"
+              titleHighlight="vector search"
+              subtitle="Store embeddings and run similarity search with metadata filters on real datasets."
               features={VECTORDB_FEATURES}
               pageKey="vectordb"
               cardLabel="Index"
-              ctaLabel="Start Searching"
+              ctaLabel="Open index"
             />
           } />
         </Route>
