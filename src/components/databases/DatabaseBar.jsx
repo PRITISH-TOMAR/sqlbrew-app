@@ -8,24 +8,28 @@ export default function DatabaseBar({ database }) {
   const theme = useTheme();
 
   const diffColor = {
-    easy: 'success', medium: 'warning', advanced: 'error',
-  }[database.difficulty] || 'default';
+    easy: 'success', medium: 'warning', hard: 'error', advanced: 'error',
+  }[String(database.difficulty || '').toLowerCase()] || 'default';
 
   return (
     <Box
       sx={{
         height: '100%',
         borderLeft: `1px solid ${theme.palette.divider}`,
-        p: 2.5,
+        p: 3,
+        overflowY: 'auto',
         bgcolor: 'background.paper',
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
       }}
     >
-      {database.title && (
-        <Typography variant="h5" fontWeight={700}>
-          {database.title}
+      <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+        About this dataset
+      </Typography>
+      {database.description && (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, mt: -1 }}>
+          {database.description}
         </Typography>
       )}
 
@@ -68,7 +72,7 @@ export default function DatabaseBar({ database }) {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
               {database.tags.map((t) => (
-                <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 500, color: 'text.secondary' }} />
               ))}
             </Box>
           </Stack>
@@ -90,10 +94,12 @@ export default function DatabaseBar({ database }) {
                   size="small"
                   sx={{
                     fontSize: '0.7rem',
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                    color: 'primary.main',
+                    fontFamily: theme.typography.fontFamilyMono,
+                    fontWeight: 500,
+                    bgcolor: 'primary.lighter',
+                    color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.dark',
                     border: '1px solid',
-                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.25),
+                    borderColor: alpha(theme.palette.primary.main, 0.2),
                   }}
                 />
               ))}

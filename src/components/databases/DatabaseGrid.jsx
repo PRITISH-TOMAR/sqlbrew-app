@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Card, Typography, Chip, Stack, Container, Divider,
   Pagination as MuiPagination, Skeleton, InputAdornment, TextField,
-  Select, MenuItem, Button, alpha, useTheme,
+  Select, MenuItem, Button, alpha, lighten, useTheme,
 } from '@mui/material';
 import DatabaseIcon from '@mui/icons-material/StorageOutlined';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
@@ -14,6 +14,7 @@ import BarChartIcon from '@mui/icons-material/BarChartOutlined';
 import LayersIcon from '@mui/icons-material/LayersOutlined';
 import CodeIcon from '@mui/icons-material/CodeOutlined';
 import { fetchDatasetGridConfig, fetchPageConfig } from '../../api/configApi';
+import { difficultyColor as diffColorOf } from '../../theme/palette';
 
 // Fallbacks used until the config API responds
 const DEFAULT_DIFFICULTY_LEVELS = ['All Levels', 'Easy', 'Medium', 'Advanced'];
@@ -25,12 +26,12 @@ const DEFAULT_DIFFICULTY_COLOR  = {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const TAG_PALETTE = ['#3b82f6', '#6366f1', '#059669', '#0891b2', '#7c3aed', '#d97706'];
-
-const DIFF_BADGE = {
-  easy:     { bg: 'rgba(34,197,94,0.14)',  color: '#4ade80', border: 'rgba(34,197,94,0.3)'  },
-  medium:   { bg: 'rgba(245,158,11,0.14)', color: '#fbbf24', border: 'rgba(245,158,11,0.3)' },
-  advanced: { bg: 'rgba(239,68,68,0.14)',  color: '#f87171', border: 'rgba(239,68,68,0.3)'  },
+// Hero band is always dark (both themes), so its colours are fixed warm-ink tones
+const HERO = {
+  bg:     '#161213',
+  text:   '#F2ECEC',
+  muted:  '#A89C9F',
+  faint:  'rgba(242,236,236,0.08)',
 };
 
 const MODE_LABELS = { mysql: 'MySQL', postgresql: 'PostgreSQL', sqlite: 'SQLite', mssql: 'MS SQL' };
@@ -53,8 +54,10 @@ function StatBlock({ icon, label, sub }) {
 
 function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
   const navigate = useNavigate();
-  const diff     = item.difficulty?.toLowerCase();
-  const badge    = DIFF_BADGE[diff] || { bg: 'rgba(148,163,184,0.14)', color: '#94a3b8', border: 'rgba(148,163,184,0.3)' };
+  const theme    = useTheme();
+  const dColor   = diffColorOf(theme, item.difficulty);
+  const badge    = { bg: alpha(dColor, 0.12), color: dColor, border: alpha(dColor, 0.3) };
+  const open     = () => navigate(`${basePath}/${item.id}`);
 
   const modesText     = item.sqlModesAvailable?.map(m => MODE_LABELS[m] || m).join(', ') || null;
   const skillsPreview = item.skills?.length > 0
@@ -66,14 +69,13 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
       elevation={0}
       sx={{
         position: 'relative',
-        border: '1px solid',
-        borderColor: 'divider',
         overflow: 'hidden',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
+        transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
         '&:hover': {
-          borderColor: accentColor,
-          boxShadow: `0 0 0 1px ${alpha(accentColor, 0.2)}`,
+          borderColor: alpha(accentColor, 0.55),
+          boxShadow: theme.customShadows.raised,
         },
+        '&:hover .dataset-cover': { transform: 'scale(1.04)' },
       }}
     >
       {/* ── Difficulty badge ── */}
@@ -118,11 +120,18 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
                 component="img"
                 src={item.coverImage}
                 alt={item.title}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                className="dataset-cover"
+                sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }}
               />
             ) : (
-              <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <DatabaseIcon sx={{ fontSize: 48, color: alpha(accentColor, 0.4) }} />
+              <Box
+                sx={{
+                  width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundImage: `radial-gradient(${alpha(accentColor, 0.18)} 1px, transparent 1px)`,
+                  backgroundSize: '14px 14px',
+                }}
+              >
+                <DatabaseIcon sx={{ fontSize: 44, color: alpha(accentColor, 0.45) }} />
               </Box>
             )
           }
@@ -134,10 +143,10 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
               width: 32, height: 32, borderRadius: 1.5,
               bgcolor: accentColor,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+              boxShadow: `0 4px 10px ${alpha(accentColor, 0.35)}`,
             }}
           >
-            <DatabaseIcon sx={{ fontSize: 18, color: '#fff' }} />
+            <DatabaseIcon sx={{ fontSize: 18, color: 'primary.contrastText' }} />
           </Box>
 
           {/* Bottom gradient overlay */}
@@ -145,7 +154,7 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
             sx={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
               px: 1.5, py: 1,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+              background: 'linear-gradient(to top, rgba(18,16,18,0.85) 0%, transparent 100%)',
             }}
           >
             <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.62rem', letterSpacing: 1.5, lineHeight: 1.35, textTransform: 'uppercase' }}>
@@ -163,13 +172,18 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
           {/* Card label */}
           <Typography
             variant="overline"
-            sx={{ display: 'block', fontSize: '0.65rem', letterSpacing: 2, color: accentColor, mb: 0.25 }}
+            sx={{ display: 'block', fontSize: '0.6875rem', letterSpacing: 1.5, color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main', mb: 0.25 }}
           >
             {cardLabel}
           </Typography>
 
           {/* Title */}
-          <Typography variant="h5" fontWeight={700} lineHeight={1.2} mb={1.25}>
+          <Typography
+            variant="h4"
+            component="h3"
+            onClick={open}
+            sx={{ lineHeight: 1.25, mb: 1, cursor: 'pointer', width: 'fit-content', '&:hover': { color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main' } }}
+          >
             {item.title}
           </Typography>
 
@@ -212,22 +226,14 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
           {/* Tags */}
           {item.tags?.length > 0 && (
             <Stack direction="row" gap={0.75} flexWrap="wrap">
-              {item.tags.map((tag, i) => {
-                const c = TAG_PALETTE[i % TAG_PALETTE.length];
-                return (
-                  <Chip
-                    key={tag}
-                    label={tag}
-                    size="small"
-                    sx={{
-                      height: 24, fontSize: '0.72rem', fontWeight: 500,
-                      bgcolor: alpha(c, 0.12),
-                      color: c,
-                      border: `1px solid ${alpha(c, 0.25)}`,
-                    }}
-                  />
-                );
-              })}
+              {item.tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{ fontWeight: 500, bgcolor: 'background.subtle', color: 'text.secondary', border: '1px solid', borderColor: 'divider' }}
+                />
+              ))}
             </Stack>
           )}
 
@@ -251,7 +257,7 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
         {item.tableCount > 0 && (
           <>
             <StatBlock
-              icon={<DatabaseIcon sx={{ fontSize: 20, color: accentColor }} />}
+              icon={<DatabaseIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
               label={`${item.tableCount} Tables`}
               sub="Explore real schema"
             />
@@ -262,7 +268,7 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
         {item.dataType && (
           <>
             <StatBlock
-              icon={<BarChartIcon sx={{ fontSize: 20, color: accentColor }} />}
+              icon={<BarChartIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
               label={item.dataType}
               sub="Based on actual data"
             />
@@ -273,7 +279,7 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
         {modesText && (
           <>
             <StatBlock
-              icon={<LayersIcon sx={{ fontSize: 20, color: accentColor }} />}
+              icon={<LayersIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
               label={modesText}
               sub="Multiple SQL modes"
             />
@@ -283,7 +289,7 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
 
         {skillsPreview && (
           <StatBlock
-            icon={<CodeIcon sx={{ fontSize: 20, color: accentColor }} />}
+            icon={<CodeIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
             label="Key Skills"
             sub={skillsPreview}
           />
@@ -292,13 +298,13 @@ function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
         <Button
           variant="contained"
           endIcon={<ArrowForwardIcon />}
-          onClick={() => navigate(`${basePath}/${item.id}`)}
+          onClick={open}
           sx={{
             ml: 'auto',
             flexShrink: 0,
-            px: 3,
-            bgcolor: accentColor,
-            '&:hover': { bgcolor: alpha(accentColor, 0.85) },
+            px: 2.5,
+            '& .MuiButton-endIcon': { transition: 'transform .15s' },
+            '&:hover .MuiButton-endIcon': { transform: 'translateX(2px)' },
           }}
         >
           {ctaLabel}
@@ -358,6 +364,9 @@ export default function DatasetGrid({
   itemsPerPage = 6,
 }) {
   const theme = useTheme();
+  // Module accent: falls back to the brand colour. The hero band is always dark, so it uses the dark-mode tone.
+  const accent     = accentColor || theme.palette.primary.main;
+  const heroAccent = accentColor ? lighten(accentColor, 0.35) : '#F2546B';
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [items,            setItems]            = useState([]);
@@ -425,8 +434,10 @@ export default function DatasetGrid({
       <Box
         sx={{
           position: 'relative',
-          bgcolor: theme.palette.mode === 'dark' ? '#0d1117' : '#0f172a',
-          color: '#fff',
+          bgcolor: HERO.bg,
+          color: HERO.text,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           overflow: 'hidden',
           py: { xs: 5, md: 7 },
           px: { xs: 3, sm: 4 },
@@ -435,11 +446,20 @@ export default function DatasetGrid({
         {/* Subtle accent glow behind content */}
         <Box
           sx={{
-            position: 'absolute', top: -80, right: -80,
-            width: 400, height: 400, borderRadius: '50%',
-            bgcolor: alpha(accentColor, 0.08),
-            filter: 'blur(80px)',
+            position: 'absolute', top: -120, right: -60,
+            width: 520, height: 520, borderRadius: '50%',
+            bgcolor: alpha(heroAccent, 0.22),
+            filter: 'blur(110px)',
             pointerEvents: 'none',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5,
+            backgroundImage: `linear-gradient(${HERO.faint} 1px, transparent 1px), linear-gradient(90deg, ${HERO.faint} 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            maskImage: 'linear-gradient(90deg, transparent 0%, #000 60%)',
+            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 60%)',
           }}
         />
 
@@ -454,23 +474,23 @@ export default function DatasetGrid({
                 <Box
                   sx={{
                     display: 'inline-flex', alignItems: 'center', gap: 1,
-                    border: '1px solid', borderColor: alpha(accentColor, 0.5),
-                    bgcolor: alpha(accentColor, 0.1),
-                    borderRadius: 10, px: 2, py: 0.5, mb: 2.5,
+                    border: '1px solid', borderColor: alpha(heroAccent, 0.45),
+                    bgcolor: alpha(heroAccent, 0.12),
+                    borderRadius: 10, px: 1.75, py: 0.5, mb: 2.5,
                   }}
                 >
-                  <DatabaseIcon sx={{ fontSize: 14, color: accentColor }} />
-                  <Typography variant="caption" fontWeight={700} sx={{ color: accentColor, letterSpacing: 1.5 }}>
+                  <DatabaseIcon sx={{ fontSize: 14, color: heroAccent }} />
+                  <Typography variant="caption" fontWeight={700} sx={{ color: heroAccent, letterSpacing: 1.5 }}>
                     {badge}
                   </Typography>
                 </Box>
               )}
 
               {/* Heading */}
-              <Typography variant="h3" fontWeight={800} lineHeight={1.15} mb={1.5}>
+              <Typography variant="h1" component="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' }, mb: 1.5, textWrap: 'balance' }}>
                 {title}{' '}
                 {titleHighlight && (
-                  <Box component="span" sx={{ color: accentColor }}>
+                  <Box component="span" sx={{ color: heroAccent }}>
                     {titleHighlight}
                   </Box>
                 )}
@@ -478,7 +498,7 @@ export default function DatasetGrid({
 
               {/* Subtitle */}
               {subtitle && (
-                <Typography variant="body1" sx={{ color: alpha('#fff', 0.65), mb: 3.5 }}>
+                <Typography variant="body1" sx={{ color: HERO.muted, mb: 3.5, fontSize: '0.9375rem', maxWidth: 560 }}>
                   {subtitle}
                 </Typography>
               )}
@@ -491,17 +511,18 @@ export default function DatasetGrid({
                       <Box
                         sx={{
                           p: 0.9, borderRadius: '50%',
-                          bgcolor: alpha('#fff', 0.08),
+                          bgcolor: HERO.faint,
+                          border: '1px solid rgba(242,236,236,0.1)',
                           display: 'flex', flexShrink: 0,
                         }}
                       >
                         {f.icon}
                       </Box>
                       <Box>
-                        <Typography variant="body2" fontWeight={700} color="#fff">
+                        <Typography variant="body2" fontWeight={700} sx={{ color: HERO.text }}>
                           {f.label}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: alpha('#fff', 0.5) }}>
+                        <Typography variant="caption" sx={{ color: HERO.muted }}>
                           {f.description}
                         </Typography>
                       </Box>
@@ -519,15 +540,16 @@ export default function DatasetGrid({
                 height: { xs: 160, md: 230 },
                 borderRadius: 3,
                 overflow: 'hidden',
-                border: '1px dashed',
-                borderColor: alpha(accentColor, 0.25),
-                bgcolor: alpha(accentColor, 0.05),
+                border: heroImage ? '1px solid' : '1px dashed',
+                borderColor: heroImage ? 'rgba(242,236,236,0.12)' : alpha(heroAccent, 0.3),
+                bgcolor: alpha(heroAccent, 0.06),
+                boxShadow: heroImage ? '0 20px 50px rgba(0,0,0,0.45)' : 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               {heroImage
                 ? <Box component="img" src={heroImage} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <Typography variant="caption" sx={{ color: alpha('#fff', 0.25) }}>Hero image</Typography>
+                : <DatabaseIcon sx={{ fontSize: 56, color: alpha(heroAccent, 0.35) }} />
               }
             </Box>
 
@@ -547,9 +569,16 @@ export default function DatasetGrid({
             gap={2}
             mb={3}
           >
-            <Typography variant="h5" fontWeight={700}>
-              Available Datasets
-            </Typography>
+            <Box>
+              <Typography variant="h3" component="h2">
+                Available datasets
+              </Typography>
+              {!loading && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                  {totalItems} {totalItems === 1 ? cardLabel.toLowerCase() : `${cardLabel.toLowerCase()}s`} to explore
+                </Typography>
+              )}
+            </Box>
 
             <Stack direction="row" gap={1.5} flexWrap="wrap">
               <TextField
@@ -565,21 +594,13 @@ export default function DatasetGrid({
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  width: 240,
-                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: accentColor,
-                  },
-                }}
+                sx={{ width: { xs: '100%', sm: 260 } }}
               />
               <Select
                 size="small"
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
-                sx={{
-                  minWidth: 130,
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: accentColor },
-                }}
+                sx={{ minWidth: 140 }}
               >
                 {difficultyLevels.map((l) => (
                   <MenuItem key={l} value={l}>{l}</MenuItem>
@@ -599,7 +620,7 @@ export default function DatasetGrid({
                     basePath={basePath}
                     ctaLabel={ctaLabel}
                     cardLabel={cardLabel}
-                    accentColor={accentColor}
+                    accentColor={accent}
                     difficultyColor={difficultyColor}
                   />
                 ))
@@ -619,19 +640,6 @@ export default function DatasetGrid({
                 onChange={handlePageChange}
                 variant="outlined"
                 shape="rounded"
-                sx={{
-                  '& .MuiPaginationItem-root': {
-                    color: accentColor,
-                    borderColor: alpha(accentColor, 0.4),
-                    '&.Mui-selected': {
-                      bgcolor: accentColor,
-                      color: '#fff',
-                      borderColor: accentColor,
-                      '&:hover': { bgcolor: alpha(accentColor, 0.85) },
-                    },
-                    '&:hover': { bgcolor: alpha(accentColor, 0.08) },
-                  },
-                }}
               />
             </Stack>
           )}
