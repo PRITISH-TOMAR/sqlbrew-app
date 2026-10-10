@@ -49,3 +49,24 @@ export function isSolvedFromApi(obj) {
     status === 'SOLVED' || status === 'ACCEPTED' || status === 'COMPLETED'
   );
 }
+
+// Per-user problem status shown on the problem list.
+export const PROBLEM_STATUS = {
+  SOLVED:      'solved',
+  ATTEMPTED:   'attempted',
+  NOT_STARTED: 'not_started',
+};
+
+/**
+ * Status for one problem. Reads the server's field when present
+ * (status / userStatus: SOLVED | ACCEPTED | ATTEMPTED | IN_PROGRESS | WRONG_ANSWER …),
+ * then falls back to this browser's record of accepted submissions.
+ */
+export function problemStatus(item, solvedIds = readSet()) {
+  if (isSolvedFromApi(item) || solvedIds.has(String(item?.id))) return PROBLEM_STATUS.SOLVED;
+  const raw = String(item?.status ?? item?.userStatus ?? item?.solveStatus ?? '').toUpperCase();
+  if (item?.attempted || ['ATTEMPTED', 'IN_PROGRESS', 'WRONG_ANSWER', 'FAILED', 'TRIED'].includes(raw)) {
+    return PROBLEM_STATUS.ATTEMPTED;
+  }
+  return PROBLEM_STATUS.NOT_STARTED;
+}
