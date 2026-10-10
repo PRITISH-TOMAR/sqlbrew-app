@@ -1,14 +1,17 @@
-export const buildShadows = (mode) => ({
-  z1: mode === 'dark'
-    ? '0px 1px 1px rgb(0 0 0 / 14%), 0px 2px 1px rgb(0 0 0 / 12%), 0px 1px 3px rgb(0 0 0 / 20%)'
-    : '0px 1px 4px rgba(38,38,38,0.08)',
-  button:        '0 2px #0000000b',
-  text:          '0 -1px 0 rgb(0 0 0 / 12%)',
-  primary:       '0 0 0 2px rgba(22,119,255,0.2)',
-  secondary:     '0 0 0 2px rgba(140,140,140,0.2)',
-  error:         '0 0 0 2px rgba(255,77,79,0.2)',
-  warning:       '0 0 0 2px rgba(250,173,20,0.2)',
-  info:          '0 0 0 2px rgba(19,194,194,0.2)',
-  success:       '0 0 0 2px rgba(82,196,26,0.2)',
-  primaryButton: '0 14px 12px rgba(22,119,255,0.2)',
-});
+// Light-mode shadows use the zinc neutral; dark mode uses pure black
+export const buildShadows = (mode) => {
+  const dark = mode === 'dark';
+  const c = dark ? '0 0 0' : '24 24 27'; // rgb triplets
+  return {
+    z1:      dark ? '0 1px 2px rgb(0 0 0 / 50%)' : `0 1px 2px rgb(${c} / 8%)`,
+    card:    dark ? '0 1px 2px rgb(0 0 0 / 40%)' : `0 1px 2px rgb(${c} / 6%), 0 1px 3px rgb(${c} / 6%)`,
+    raised:  dark ? '0 8px 24px rgb(0 0 0 / 45%)' : `0 4px 12px rgb(${c} / 8%), 0 1px 3px rgb(${c} / 6%)`,
+    popover: dark ? '0 12px 32px rgb(0 0 0 / 55%), 0 0 0 1px rgb(255 255 255 / 3%)' : `0 12px 32px rgb(${c} / 12%), 0 2px 6px rgb(${c} / 6%)`,
+    dialog:  dark ? '0 24px 64px rgb(0 0 0 / 60%)' : `0 24px 64px rgb(${c} / 18%)`,
+    button:  `0 1px 2px rgb(${c} / 10%)`,
+    primary: dark ? '0 0 0 3px rgb(242 84 107 / 35%)' : '0 0 0 3px rgb(155 27 48 / 20%)',
+    error:   dark ? '0 0 0 3px rgb(255 138 76 / 30%)' : '0 0 0 3px rgb(194 65 12 / 22%)',
+    success: dark ? '0 0 0 3px rgb(61 214 140 / 30%)' : '0 0 0 3px rgb(21 128 79 / 22%)',
+    primaryButton: dark ? '0 10px 24px rgb(242 84 107 / 22%)' : '0 10px 24px rgb(155 27 48 / 22%)',
+  };
+};
