@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
+import UsersIcon from '@mui/icons-material/GroupOutlined';
+import AssetsIcon from '@mui/icons-material/PermMediaOutlined';
+import ContentIcon from '@mui/icons-material/LibraryBooksOutlined';
+import ScopesIcon from '@mui/icons-material/VpnKeyOutlined';
 import { useSelector } from 'react-redux';
 import UsersTab   from '../../components/admin/UsersTab.jsx';
 import AssetsTab  from '../../components/admin/AssetsTab.jsx';
 import ScopesTab  from '../../components/admin/ScopesTab.jsx';
 import ContentTab from '../../components/admin/ContentTab.jsx';
 
-const CHALK_FONT = "'Caveat', cursive";
-const ACTIVE_BG  = '#1a5f6e';
-const BORDER     = '1.5px solid rgba(255,255,255,0.55)';
+const TABS = [
+  { label: 'Users',   icon: <UsersIcon />,   description: 'Accounts, roles and access' },
+  { label: 'Assets',  icon: <AssetsIcon />,  description: 'Images and uploaded files' },
+  { label: 'Content', icon: <ContentIcon />, description: 'Datasets, questions, solutions and test cases' },
+  { label: 'Scopes',  icon: <ScopesIcon />,  description: 'Permission scopes', superAdminOnly: true },
+];
 
 export default function AdminPortal() {
   const role = useSelector((s) => s.config.data?.role);
@@ -20,62 +27,42 @@ export default function AdminPortal() {
   }
 
   const isSuperAdmin = role === 'SUPERADMIN';
-  const tabs = ['Users', 'Assets', 'Content', ...(isSuperAdmin ? ['Scopes'] : [])];
+  const tabs = TABS.filter((t) => !t.superAdminOnly || isSuperAdmin);
+  const current = tabs[tab] ?? tabs[0];
 
   return (
-    <Box
-      sx={{
-        m: { xs: 1, md: 2 },
-        border: BORDER,
-        borderRadius: '14px',
-        bgcolor: '#0a0a0a',
-        p: { xs: 2, md: 3 },
-        minHeight: '82vh',
-        fontFamily: CHALK_FONT,
-      }}
-    >
-      {/* Tab row */}
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        {tabs.map((label, i) => (
-          <Box
-            key={label}
-            component="button"
-            onClick={() => setTab(i)}
-            sx={{
-              fontFamily: CHALK_FONT,
-              fontSize: '1.15rem',
-              color: '#fff',
-              border: BORDER,
-              borderRadius: '8px',
-              px: 3,
-              py: 0.7,
-              cursor: 'pointer',
-              bgcolor: tab === i ? ACTIVE_BG : 'transparent',
-              '&:hover': { bgcolor: tab === i ? ACTIVE_BG : 'rgba(255,255,255,0.07)' },
-              transition: 'background 0.15s',
-              outline: 'none',
-              letterSpacing: 0.3,
-            }}
-          >
-            {label}
-          </Box>
-        ))}
-      </Box>
+    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: 'auto', width: '100%' }}>
+      <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 0.5 }}>
+        <Typography variant="h2" component="h1">Admin portal</Typography>
+        <Chip size="small" color="primary" label={isSuperAdmin ? 'Super admin' : 'Admin'} />
+      </Stack>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5 }}>
+        {current.description}
+      </Typography>
 
-      {/* Content area */}
-      <Box
-        sx={{
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: '10px',
-          p: { xs: 1.5, md: 2.5 },
-          minHeight: 420,
-        }}
+      <Paper
+        variant="outlined"
+        sx={{ borderRadius: 4, overflow: 'hidden', bgcolor: 'background.paper', minHeight: '70vh' }}
       >
-        {tab === 0 && <UsersTab />}
-        {tab === 1 && <AssetsTab />}
-        {tab === 2 && <ContentTab />}
-        {tab === 3 && isSuperAdmin && <ScopesTab />}
-      </Box>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          variant="scrollable"
+          allowScrollButtonsMobile
+          sx={{ px: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
+        >
+          {tabs.map((t) => (
+            <Tab key={t.label} label={t.label} icon={t.icon} iconPosition="start" sx={{ gap: 0.5, '& .MuiTab-icon': { fontSize: 18, mr: 0.5 } }} />
+          ))}
+        </Tabs>
+
+        <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+          {current.label === 'Users'   && <UsersTab />}
+          {current.label === 'Assets'  && <AssetsTab />}
+          {current.label === 'Content' && <ContentTab />}
+          {current.label === 'Scopes'  && isSuperAdmin && <ScopesTab />}
+        </Box>
+      </Paper>
     </Box>
   );
 }

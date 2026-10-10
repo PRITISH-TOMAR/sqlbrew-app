@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import LockIcon from '@mui/icons-material/LockOutlined';
@@ -21,39 +21,52 @@ import ProblemSolver  from './pages/problemset/ProblemSolver.jsx';
 import UserProfile    from './pages/profile/UserProfile.jsx';
 import AdminPortal    from './pages/admin/AdminPortal.jsx';
 
-// ─── SQL — Blue ──────────────────────────────────────────────────────────────
-const SQL_COLOR    = '#2563eb';
+// Feature icons sit on the always-dark hero band, so they use the dark-mode Garnet tones.
+const HERO_ICON = { rose: '#F08A97', green: '#7FD8A6', amber: '#F5B544', blue: '#6AB0F5', violet: '#B79BF2' };
+
+// ─── SQL — Garnet (brand) ────────────────────────────────────────────────────
+const SQL_COLOR    = undefined; // use theme primary
 const SQL_FEATURES = [
-  { icon: <PracticeIcon  sx={{ fontSize: 18, color: '#60a5fa' }} />, label: 'Hands-on Practice',   description: 'Real-world datasets'    },
-  { icon: <StructuredIcon sx={{ fontSize: 18, color: '#34d399' }} />, label: 'Structured Learning', description: 'From basics to advanced' },
-  { icon: <TrophyIcon    sx={{ fontSize: 18, color: '#fbbf24' }} />, label: 'Build Your Skills',   description: 'Solve challenges'       },
+  { icon: <PracticeIcon  sx={{ fontSize: 18, color: HERO_ICON.rose  }} />, label: 'Hands-on practice',   description: 'Real-world datasets'    },
+  { icon: <StructuredIcon sx={{ fontSize: 18, color: HERO_ICON.green }} />, label: 'Structured learning', description: 'From basics to advanced' },
+  { icon: <TrophyIcon    sx={{ fontSize: 18, color: HERO_ICON.amber }} />, label: 'Instant feedback',    description: 'Judged on hidden tests'       },
 ];
 
 // ─── NoSQL — Green ───────────────────────────────────────────────────────────
-const NOSQL_COLOR    = '#16a34a';
+const NOSQL_COLOR    = '#15804F';
 const NOSQL_FEATURES = [
-  { icon: <FlexibleIcon sx={{ fontSize: 18, color: '#4ade80' }} />, label: 'Schema Flexibility',  description: 'Documents & key-value'  },
-  { icon: <SpeedIcon    sx={{ fontSize: 18, color: '#facc15' }} />, label: 'High Performance',    description: 'Built for scale'        },
-  { icon: <SearchIcon   sx={{ fontSize: 18, color: '#60a5fa' }} />, label: 'Rich Querying',       description: 'Aggregations & indexes' },
+  { icon: <FlexibleIcon sx={{ fontSize: 18, color: HERO_ICON.green }} />, label: 'Schema Flexibility',  description: 'Documents & key-value'  },
+  { icon: <SpeedIcon    sx={{ fontSize: 18, color: HERO_ICON.amber }} />, label: 'High Performance',    description: 'Built for scale'        },
+  { icon: <SearchIcon   sx={{ fontSize: 18, color: HERO_ICON.blue  }} />, label: 'Rich Querying',       description: 'Aggregations & indexes' },
 ];
 
-// ─── VectorDB — Purple ───────────────────────────────────────────────────────
-const VECTORDB_COLOR    = '#7c3aed';
+// ─── VectorDB — Violet ───────────────────────────────────────────────────────
+const VECTORDB_COLOR    = '#7C4DCC';
 const VECTORDB_FEATURES = [
-  { icon: <EmbeddingIcon sx={{ fontSize: 18, color: '#c084fc' }} />, label: 'Embeddings',        description: 'Semantic vector search'  },
-  { icon: <BoltIcon      sx={{ fontSize: 18, color: '#fbbf24' }} />, label: 'ANN Search',        description: 'Approximate nearest neighbor' },
-  { icon: <TuneIcon      sx={{ fontSize: 18, color: '#34d399' }} />, label: 'Fine-tune & Filter', description: 'Metadata + vector hybrid' },
+  { icon: <EmbeddingIcon sx={{ fontSize: 18, color: HERO_ICON.violet }} />, label: 'Embeddings',        description: 'Semantic vector search'  },
+  { icon: <BoltIcon      sx={{ fontSize: 18, color: HERO_ICON.amber  }} />, label: 'ANN Search',        description: 'Approximate nearest neighbor' },
+  { icon: <TuneIcon      sx={{ fontSize: 18, color: HERO_ICON.green  }} />, label: 'Fine-tune & Filter', description: 'Metadata + vector hybrid' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+const MODULE_NAMES = { SQL: 'SQL', NOSQL: 'NoSQL', VECTORDB: 'Vector Database' };
+
+// Sends guests to /login and remembers where they were going, so sign-in can bring them back
 function ProtectedRoute() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return isAuthenticated
+    ? <Outlet />
+    : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
 }
 
-function ModuleGuard({ moduleKey }) {
+// allowGuests: signed-out visitors may browse (the module config only exists for signed-in users)
+function ModuleGuard({ moduleKey, allowGuests = false }) {
+  const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const { data, loading } = useSelector((s) => s.config);
+
+  if (allowGuests && !isAuthenticated) return <Outlet />;
 
   if (loading || !data) {
     return (
@@ -66,19 +79,26 @@ function ModuleGuard({ moduleKey }) {
   const module = data.modules?.find((m) => m.key === moduleKey);
   if (!module || !module.enabled) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 2 }}>
-        <LockIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-        <Typography variant="h6" color="text.secondary">
-          {moduleKey} module is not enabled for your account
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 1.5, px: 3, textAlign: 'center' }}>
+        <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: 'primary.lighter', color: 'primary.main', display: 'grid', placeItems: 'center', mb: 1 }}>
+          <LockIcon sx={{ fontSize: 30 }} />
+        </Box>
+        <Typography variant="h4" component="h1">
+          {MODULE_NAMES[moduleKey] ?? moduleKey} isn't enabled for your account
         </Typography>
-        <Typography variant="body2" color="text.disabled">
-          Contact your admin or upgrade your plan to gain access.
+        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 420 }}>
+          Ask your admin to turn it on, or upgrade your plan to get access.
         </Typography>
       </Box>
     );
   }
 
   return <Outlet />;
+}
+
+function RedirectAfterLogin() {
+  const location = useLocation();
+  return <Navigate to={location.state?.from || '/'} replace />;
 }
 
 export default function Routing() {
@@ -88,29 +108,33 @@ export default function Routing() {
     <Routes>
       {/* Public routes */}
       <Route path="/"             element={<Dashboard />} />
-      <Route path="/login"        element={isAuthenticated ? <Navigate to="/" replace /> : <AuthContainer />} />
+      <Route path="/login"        element={isAuthenticated ? <RedirectAfterLogin /> : <AuthContainer />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
 
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
-
-        {/* SQL */}
-        <Route element={<ModuleGuard moduleKey="SQL" />}>
-          <Route path="/sql" element={
+      {/* SQL dataset list: public, so visitors can browse before signing up */}
+      <Route element={<ModuleGuard moduleKey="SQL" allowGuests />}>
+        <Route path="/sql" element={
             <DatasetGrid
               fetchFn={loadSQLDatasets}
               basePath="/sql"
               accentColor={SQL_COLOR}
-              badge="LEARN • PRACTICE • GROW"
-              title="Database"
-              titleHighlight="Learning Paths"
-              subtitle="Explore our comprehensive database courses and challenges"
+              badge="SQL"
+              title="Practise SQL on"
+              titleHighlight="real datasets"
+              subtitle="Each dataset is a real schema with its own set of problems, from simple filters to window functions. Pick one to start."
               features={SQL_FEATURES}
               pageKey="sql"
               cardLabel="Dataset"
-              ctaLabel="Start Learning"
+              ctaLabel="Open dataset"
             />
           } />
+      </Route>
+
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+
+        {/* SQL: problems and the solver need an account */}
+        <Route element={<ModuleGuard moduleKey="SQL" />}>
           <Route path="/sql/:dbId"            element={<SQLProblemset />} />
           <Route path="/sql/:dbId/:problemId" element={<ProblemSolver />} />
         </Route>
@@ -128,14 +152,14 @@ export default function Routing() {
               fetchFn={loadNoSQLDatasets}
               basePath="/nosql"
               accentColor={NOSQL_COLOR}
-              badge="DOCUMENTS • KEY-VALUE • GRAPHS"
-              title="NoSQL"
-              titleHighlight="Collections"
-              subtitle="Master non-relational databases with real-world document and graph datasets"
+              badge="NOSQL"
+              title="Practise NoSQL on"
+              titleHighlight="real collections"
+              subtitle="Work with document and key-value data, then query it with aggregation pipelines and indexes."
               features={NOSQL_FEATURES}
               pageKey="nosql"
               cardLabel="Collection"
-              ctaLabel="Explore Collection"
+              ctaLabel="Open collection"
             />
           } />
         </Route>
@@ -147,14 +171,14 @@ export default function Routing() {
               fetchFn={loadVectorDBDatasets}
               basePath="/vectordb"
               accentColor={VECTORDB_COLOR}
-              badge="EMBEDDINGS • SEARCH • AI"
-              title="Vector"
-              titleHighlight="Databases"
-              subtitle="Learn vector search and semantic similarity with AI-powered dataset challenges"
+              badge="VECTOR DATABASE"
+              title="Practise"
+              titleHighlight="vector search"
+              subtitle="Store embeddings and run similarity search with metadata filters on real datasets."
               features={VECTORDB_FEATURES}
               pageKey="vectordb"
               cardLabel="Index"
-              ctaLabel="Start Searching"
+              ctaLabel="Open index"
             />
           } />
         </Route>

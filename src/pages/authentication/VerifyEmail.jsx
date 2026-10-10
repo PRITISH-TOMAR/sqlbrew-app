@@ -85,8 +85,8 @@ export default function VerifyEmail() {
             p: { xs: 3, sm: 4 },
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 3,
-            boxShadow: theme.shadows[1],
+            borderRadius: 4,
+            boxShadow: theme.customShadows.raised,
           }}
         >
           <Stack alignItems="center" spacing={2} py={1}>
@@ -138,8 +138,8 @@ export default function VerifyEmail() {
             p: { xs: 3, sm: 4 },
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 3,
-            boxShadow: theme.shadows[1],
+            borderRadius: 4,
+            boxShadow: theme.customShadows.raised,
           }}
         >
           <Signup
@@ -171,12 +171,12 @@ export default function VerifyEmail() {
             sx={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)',
+              background: 'linear-gradient(180deg, rgba(110,15,30,0.15) 0%, rgba(18,16,18,0.2) 40%, rgba(18,16,18,0.85) 100%)',
             }}
           />
           <Stack
             spacing={1}
-            sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, p: 4, color: '#fff' }}
+            sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, p: 4, color: '#FFFFFF' }}
           >
             <Typography variant="h4" fontWeight={600}>
               Master SQL, one query at a time

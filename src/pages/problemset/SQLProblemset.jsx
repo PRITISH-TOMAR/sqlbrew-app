@@ -31,12 +31,12 @@ export default function SQLProblemset() {
   return (
     <Box sx={{ display: 'flex', width: '100%', minHeight: '100%' }}>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <ProblemsList items={problems} loading={loadingProblems} />
+        <ProblemsList items={problems || []} loading={loadingProblems} title={data?.title} />
       </Box>
       <Box
         sx={{
           display: { xs: 'none', lg: 'block' },
-          width: 260,
+          width: 300,
           flexShrink: 0,
           position: 'sticky',
           top: APP_BAR_HEIGHT,

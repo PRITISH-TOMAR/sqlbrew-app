@@ -40,7 +40,7 @@ function LevelBadge({ level, title, xpToNext, xpProgress, loading }) {
           width: 52,
           height: 52,
           clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-          bgcolor: theme.palette.mode === 'dark' ? '#1e2a3a' : '#dbeafe',
+          bgcolor: 'primary.lighter',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -68,7 +68,7 @@ function LevelBadge({ level, title, xpToNext, xpProgress, loading }) {
             height: 6,
             borderRadius: 3,
             bgcolor: 'divider',
-            '& .MuiLinearProgress-bar': { bgcolor: 'info.main', borderRadius: 3 },
+            '& .MuiLinearProgress-bar': { bgcolor: 'primary.main', borderRadius: 3 },
           }}
         />
         <Typography variant="caption" color="text.secondary">

@@ -1,340 +1,289 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Box, Card, Typography, Chip, Stack, Container, Divider,
-  Pagination as MuiPagination, Skeleton, InputAdornment, TextField,
-  Select, MenuItem, Button, alpha, useTheme,
+  Box, Card, Typography, Stack, Container, IconButton, InputBase,
+  Pagination as MuiPagination, Skeleton, ToggleButton, ToggleButtonGroup,
+  Button, Tooltip, alpha, lighten, useTheme,
 } from '@mui/material';
 import DatabaseIcon from '@mui/icons-material/StorageOutlined';
-import SearchIcon from '@mui/icons-material/SearchOutlined';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import SearchIcon from '@mui/icons-material/SearchRounded';
+import ClearIcon from '@mui/icons-material/CloseRounded';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForwardRounded';
 import QuestionsIcon from '@mui/icons-material/ListAltOutlined';
 import TimeIcon from '@mui/icons-material/AccessTimeOutlined';
-import BarChartIcon from '@mui/icons-material/BarChartOutlined';
+import TableIcon from '@mui/icons-material/TableChartOutlined';
+import SearchOffIcon from '@mui/icons-material/SearchOffRounded';
 import LayersIcon from '@mui/icons-material/LayersOutlined';
-import CodeIcon from '@mui/icons-material/CodeOutlined';
 import { fetchDatasetGridConfig, fetchPageConfig } from '../../api/configApi';
+import { difficultyColor as diffColorOf } from '../../theme/palette';
 
-// Fallbacks used until the config API responds
-const DEFAULT_DIFFICULTY_LEVELS = ['All Levels', 'Easy', 'Medium', 'Advanced'];
-const DEFAULT_DIFFICULTY_COLOR  = {
-  easy:     { color: 'success', variant: 'filled' },
-  medium:   { color: 'warning', variant: 'filled' },
-  advanced: { color: 'error',   variant: 'filled' },
+// Fallback until the config API responds
+const DEFAULT_DIFFICULTY_LEVELS = ['Easy', 'Medium', 'Advanced'];
+const ALL = 'all';
+
+// The hero band is always dark (both themes), so its colours are fixed warm-ink tones
+const HERO = {
+  bg:    '#161213',
+  text:  '#F2ECEC',
+  muted: '#B8ADB0',
+  faint: 'rgba(242,236,236,0.08)',
+  line:  'rgba(242,236,236,0.12)',
 };
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+const MODE_LABELS = { mysql: 'MySQL', postgresql: 'PostgreSQL', sqlite: 'SQLite', mssql: 'SQL Server' };
+const SEARCH_DEBOUNCE_MS = 350;
 
-const TAG_PALETTE = ['#3b82f6', '#6366f1', '#059669', '#0891b2', '#7c3aed', '#d97706'];
+// ─── Small pieces ────────────────────────────────────────────────────────────
 
-const DIFF_BADGE = {
-  easy:     { bg: 'rgba(34,197,94,0.14)',  color: '#4ade80', border: 'rgba(34,197,94,0.3)'  },
-  medium:   { bg: 'rgba(245,158,11,0.14)', color: '#fbbf24', border: 'rgba(245,158,11,0.3)' },
-  advanced: { bg: 'rgba(239,68,68,0.14)',  color: '#f87171', border: 'rgba(239,68,68,0.3)'  },
-};
-
-const MODE_LABELS = { mysql: 'MySQL', postgresql: 'PostgreSQL', sqlite: 'SQLite', mssql: 'MS SQL' };
-
-// ─── Stat block (bottom row) ─────────────────────────────────────────────────
-
-function StatBlock({ icon, label, sub }) {
+function DifficultyPill({ value, solid = false }) {
+  const theme = useTheme();
+  const color = diffColorOf(theme, value);
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: { xs: 1.5, sm: 2 }, py: 0.5, minWidth: 0 }}>
-      <Box sx={{ flexShrink: 0 }}>{icon}</Box>
-      <Box sx={{ minWidth: 0 }}>
-        <Typography variant="body2" fontWeight={600} lineHeight={1.25} noWrap>{label}</Typography>
-        <Typography variant="caption" color="text.secondary" lineHeight={1.2} sx={{ display: 'block' }} noWrap>{sub}</Typography>
-      </Box>
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex', alignItems: 'center', gap: 0.75, flexShrink: 0,
+        px: 1.25, py: 0.4, borderRadius: 999,
+        fontSize: '0.8125rem', fontWeight: 700, lineHeight: 1.3, textTransform: 'capitalize',
+        color, bgcolor: solid ? 'background.paper' : alpha(color, theme.palette.mode === 'dark' ? 0.16 : 0.1),
+        boxShadow: solid ? '0 1px 3px rgba(0,0,0,0.25)' : 'none',
+      }}
+    >
+      <Box component="span" sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: color }} />
+      {value || 'All levels'}
     </Box>
   );
 }
 
-// ─── Dataset Card ────────────────────────────────────────────────────────────
+function Meta({ icon, children }) {
+  return (
+    <Stack direction="row" alignItems="center" gap={0.75} sx={{ color: 'text.secondary', minWidth: 0 }}>
+      {icon}
+      <Typography component="span" sx={{ fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+        {children}
+      </Typography>
+    </Stack>
+  );
+}
 
-function DatasetCard({ item, basePath, ctaLabel, cardLabel, accentColor }) {
+// ─── Dataset cover (image or generated placeholder) ──────────────────────────
+
+// Fixed art colours (look right in both themes). Each dataset gets one, picked from its title.
+const COVER_TONES = [
+  ['#B3324A', '#3A0A13'], // garnet
+  ['#B45309', '#3B1603'], // amber
+  ['#0E7490', '#082F3A'], // teal
+  ['#4F46E5', '#1E1B4B'], // indigo
+  ['#15803D', '#052E16'], // green
+  ['#A21CAF', '#3B0764'], // plum
+];
+const hashOf = (str = '') => [...String(str)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+// A small "schema" drawing: three tables joined by lines
+function SchemaArt({ seed }) {
+  const flip = seed % 2 === 1;
+  const t = (x, y, rows, w = 92) => (
+    <g transform={`translate(${x} ${y})`}>
+      <rect width={w} height={18 + rows * 12} rx="7" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.35)" />
+      <rect width={w} height="16" rx="7" fill="rgba(255,255,255,0.32)" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <rect key={i} x="9" y={23 + i * 12} width={w - 18 - ((i * 17 + seed) % 28)} height="4" rx="2" fill="rgba(255,255,255,0.45)" />
+      ))}
+    </g>
+  );
+  return (
+    <Box
+      component="svg" viewBox="0 0 360 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
+      sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', transform: flip ? 'scaleX(-1)' : 'none' }}
+    >
+      <path d="M150 52 C 185 52, 185 40, 214 40" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+      <path d="M150 70 C 190 70, 190 104, 226 104" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+      {t(58, 34, 4)}
+      {t(214, 20, 2, 84)}
+      {t(226, 84, 3, 96)}
+    </Box>
+  );
+}
+
+function DatasetCover({ item, difficulty }) {
+  const [failed, setFailed] = useState(false);
+  const seed = hashOf(`${item.id}-${item.title}`);
+  // Numeric ids give neighbouring cards different colours; anything else falls back to the hash
+  const toneIndex = Number.isFinite(Number(item.id)) ? Number(item.id) : seed;
+  const [from, to] = COVER_TONES[Math.abs(toneIndex) % COVER_TONES.length];
+  const showImage = item.coverImage && !failed;
+
+  return (
+    <Box
+      sx={{
+        position: 'relative', height: 148, flexShrink: 0, overflow: 'hidden',
+        background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
+        borderBottom: '1px solid', borderColor: 'divider',
+      }}
+    >
+      {showImage ? (
+        <Box
+          component="img" src={item.coverImage} alt="" loading="lazy"
+          onError={() => setFailed(true)}
+          className="dataset-cover"
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }}
+        />
+      ) : (
+        <>
+          <Box sx={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
+          <SchemaArt seed={seed} />
+        </>
+      )}
+      {/* Readability scrim for the badges */}
+      <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.28) 0%, transparent 45%)' }} />
+      <Box sx={{ position: 'absolute', top: 12, left: 12 }}>{difficulty}</Box>
+      {item.dataType && !/^(sql|nosql|vector)/i.test(item.dataType) && (
+        <Box
+          sx={{
+            position: 'absolute', top: 12, right: 12,
+            px: 1, py: 0.35, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 700,
+            color: '#FFFFFF', bgcolor: 'rgba(18,16,18,0.55)', backdropFilter: 'blur(4px)',
+          }}
+        >
+          {item.dataType}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+// ─── Dataset card ────────────────────────────────────────────────────────────
+
+function DatasetCard({ item, basePath, ctaLabel, accentColor }) {
   const navigate = useNavigate();
-  const diff     = item.difficulty?.toLowerCase();
-  const badge    = DIFF_BADGE[diff] || { bg: 'rgba(148,163,184,0.14)', color: '#94a3b8', border: 'rgba(148,163,184,0.3)' };
-
-  const modesText     = item.sqlModesAvailable?.map(m => MODE_LABELS[m] || m).join(', ') || null;
-  const skillsPreview = item.skills?.length > 0
-    ? item.skills.slice(0, 3).join(', ') + (item.skills.length > 3 ? ' + more' : '')
-    : null;
+  const theme    = useTheme();
+  const isDark   = theme.palette.mode === 'dark';
+  const open     = () => navigate(`${basePath}/${item.id}`);
+  const modes    = item.sqlModesAvailable?.map((m) => MODE_LABELS[m] || m) ?? [];
+  const skills   = item.skills ?? [];
+  const shownSkills = skills.slice(0, 3);
+  const ctaColor = isDark ? lighten(accentColor, 0.35) : accentColor;
 
   return (
     <Card
-      elevation={0}
+      component="article"
       sx={{
-        position: 'relative',
-        border: '1px solid',
-        borderColor: 'divider',
-        overflow: 'hidden',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
+        position: 'relative', height: '100%',
+        display: 'flex', flexDirection: 'column',
+        transition: 'border-color .2s, box-shadow .2s, transform .2s',
         '&:hover': {
-          borderColor: accentColor,
-          boxShadow: `0 0 0 1px ${alpha(accentColor, 0.2)}`,
+          borderColor: alpha(accentColor, 0.5),
+          boxShadow: theme.customShadows.raised,
+          transform: 'translateY(-3px)',
         },
+        '&:hover .dataset-cover': { transform: 'scale(1.04)' },
+        '&:hover .dataset-cta': { bgcolor: accentColor, color: theme.palette.primary.contrastText, borderColor: accentColor },
+        '&:hover .dataset-cta svg': { transform: 'translateX(3px)' },
       }}
     >
-      {/* ── Difficulty badge ── */}
-      <Box
-        sx={{
-          position: 'absolute', top: 14, right: 14, zIndex: 1,
-          display: 'flex', alignItems: 'center', gap: 0.6,
-          px: 1.4, py: 0.45,
-          bgcolor: badge.bg,
-          border: '1px solid', borderColor: badge.border,
-          borderRadius: 5,
-        }}
-      >
-        <BarChartIcon sx={{ fontSize: 14, color: badge.color }} />
-        <Typography
-          variant="caption"
-          fontWeight={700}
-          sx={{ color: badge.color, textTransform: 'capitalize', lineHeight: 1 }}
-        >
-          {item.difficulty || 'N/A'}
-        </Typography>
-      </Box>
+      <DatasetCover item={item} difficulty={<DifficultyPill value={item.difficulty} solid />} />
 
-      {/* ── Top section: image + content ── */}
-      <Box sx={{ display: 'flex' }}>
-
-        {/* Cover image */}
-        <Box
-          sx={{
-            position: 'relative',
-            width: { xs: 120, sm: 190 },
-            flexShrink: 0,
-            alignSelf: 'stretch',
-            minHeight: 190,
-            bgcolor: alpha(accentColor, 0.07),
-            overflow: 'hidden',
-          }}
-        >
-          {item.coverImage
-            ? (
-              <Box
-                component="img"
-                src={item.coverImage}
-                alt={item.title}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            ) : (
-              <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <DatabaseIcon sx={{ fontSize: 48, color: alpha(accentColor, 0.4) }} />
-              </Box>
-            )
-          }
-
-          {/* Top-left icon badge */}
-          <Box
-            sx={{
-              position: 'absolute', top: 10, left: 10,
-              width: 32, height: 32, borderRadius: 1.5,
-              bgcolor: accentColor,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
-            }}
-          >
-            <DatabaseIcon sx={{ fontSize: 18, color: '#fff' }} />
-          </Box>
-
-          {/* Bottom gradient overlay */}
-          <Box
-            sx={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              px: 1.5, py: 1,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
-            }}
-          >
-            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.62rem', letterSpacing: 1.5, lineHeight: 1.35, textTransform: 'uppercase' }}>
+      <Box sx={{ p: { xs: 2.25, sm: 2.75 }, display: 'flex', flexDirection: 'column', gap: 1.5, flex: 1 }}>
+        {/* Title — the real link; its ::after stretches over the whole card */}
+        <Box>
+          <Typography variant="h3" component="h3" sx={{ fontSize: { xs: '1.1875rem', sm: '1.3125rem' }, lineHeight: 1.3 }}>
+            <Box
+              component="a"
+              href={`${basePath}/${item.id}`}
+              onClick={(e) => { e.preventDefault(); open(); }}
+              sx={{
+                color: 'inherit', textDecoration: 'none',
+                '&::after': { content: '""', position: 'absolute', inset: 0, borderRadius: 'inherit' },
+                '&:focus-visible': { outline: 'none' },
+                '&:focus-visible::after': { boxShadow: theme.customShadows.primary },
+              }}
+            >
               {item.title}
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.58rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-              {item.dataType || 'Real-world Data'}
-            </Typography>
-          </Box>
+            </Box>
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ mt: 0.75, columnGap: 2, rowGap: 0.5 }}>
+            {item.questions > 0 && <Meta icon={<QuestionsIcon sx={{ fontSize: 17 }} />}>{item.questions} problems</Meta>}
+            {item.tableCount > 0 && <Meta icon={<TableIcon sx={{ fontSize: 17 }} />}>{item.tableCount} tables</Meta>}
+            {item.estimatedTime && <Meta icon={<TimeIcon sx={{ fontSize: 17 }} />}>{item.estimatedTime}</Meta>}
+            {modes.length > 0 && <Meta icon={<LayersIcon sx={{ fontSize: 17 }} />}>{modes.join(' · ')}</Meta>}
+          </Stack>
         </Box>
 
-        {/* Right: main content */}
-        <Box sx={{ flex: 1, minWidth: 0, px: { xs: 2, sm: 3 }, pt: 2.5, pb: 2.5, pr: { sm: 7 } }}>
+        {/* Description: two lines so every card lines up */}
+        <Typography
+          sx={{
+            fontSize: '0.9375rem', lineHeight: 1.6, color: 'text.secondary', minHeight: '3.2em',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}
+        >
+          {item.description || 'No description yet.'}
+        </Typography>
 
-          {/* Card label */}
-          <Typography
-            variant="overline"
-            sx={{ display: 'block', fontSize: '0.65rem', letterSpacing: 2, color: accentColor, mb: 0.25 }}
-          >
-            {cardLabel}
-          </Typography>
-
-          {/* Title */}
-          <Typography variant="h5" fontWeight={700} lineHeight={1.2} mb={1.25}>
-            {item.title}
-          </Typography>
-
-          {/* Meta: questions | estimatedTime */}
-          <Stack direction="row" alignItems="center" gap={1.5} mb={1.5} flexWrap="wrap">
-            {item.questions > 0 && (
-              <Stack direction="row" alignItems="center" gap={0.6}>
-                <QuestionsIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {item.questions} questions
-                </Typography>
-              </Stack>
-            )}
-            {item.questions > 0 && item.estimatedTime && (
-              <Typography variant="body2" color="text.disabled">|</Typography>
-            )}
-            {item.estimatedTime && (
-              <Stack direction="row" alignItems="center" gap={0.6}>
-                <TimeIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {item.estimatedTime}
-                </Typography>
-              </Stack>
+        {/* Skills */}
+        {shownSkills.length > 0 && (
+          <Stack direction="row" gap={0.75} alignItems="center" sx={{ overflow: 'hidden', flexWrap: 'nowrap', minHeight: 28 }}>
+            {shownSkills.map((s) => (
+              <Box
+                key={s}
+                component="span"
+                sx={{
+                  fontFamily: theme.typography.fontFamilyMono, fontSize: '0.8125rem', fontWeight: 500,
+                  px: 1, py: 0.25, borderRadius: 1.5, whiteSpace: 'nowrap', flexShrink: 0,
+                  bgcolor: 'background.subtle', color: 'text.primary', border: '1px solid', borderColor: 'divider',
+                }}
+              >
+                {s}
+              </Box>
+            ))}
+            {skills.length > shownSkills.length && (
+              <Tooltip title={skills.slice(shownSkills.length).join(', ')}>
+                <Box component="span" sx={{ position: 'relative', zIndex: 1, fontSize: '0.8125rem', fontWeight: 600, px: 0.5, color: 'text.secondary', cursor: 'default', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  +{skills.length - shownSkills.length} more
+                </Box>
+              </Tooltip>
             )}
           </Stack>
-
-          {/* Description */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mb: 2, lineHeight: 1.65,
-              display: '-webkit-box', WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}
-          >
-            {item.description}
-          </Typography>
-
-          {/* Tags */}
-          {item.tags?.length > 0 && (
-            <Stack direction="row" gap={0.75} flexWrap="wrap">
-              {item.tags.map((tag, i) => {
-                const c = TAG_PALETTE[i % TAG_PALETTE.length];
-                return (
-                  <Chip
-                    key={tag}
-                    label={tag}
-                    size="small"
-                    sx={{
-                      height: 24, fontSize: '0.72rem', fontWeight: 500,
-                      bgcolor: alpha(c, 0.12),
-                      color: c,
-                      border: `1px solid ${alpha(c, 0.25)}`,
-                    }}
-                  />
-                );
-              })}
-            </Stack>
-          )}
-
-        </Box>
-      </Box>
-
-      {/* ── Divider ── */}
-      <Divider />
-
-      {/* ── Bottom stats row ── */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: { xs: 'wrap', md: 'nowrap' },
-          gap: { xs: 1, md: 0 },
-          px: { xs: 1.5, sm: 2 },
-          py: 1.25,
-        }}
-      >
-        {item.tableCount > 0 && (
-          <>
-            <StatBlock
-              icon={<DatabaseIcon sx={{ fontSize: 20, color: accentColor }} />}
-              label={`${item.tableCount} Tables`}
-              sub="Explore real schema"
-            />
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-          </>
         )}
 
-        {item.dataType && (
-          <>
-            <StatBlock
-              icon={<BarChartIcon sx={{ fontSize: 20, color: accentColor }} />}
-              label={item.dataType}
-              sub="Based on actual data"
-            />
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-          </>
-        )}
+        <Box sx={{ flex: 1 }} />
 
-        {modesText && (
-          <>
-            <StatBlock
-              icon={<LayersIcon sx={{ fontSize: 20, color: accentColor }} />}
-              label={modesText}
-              sub="Multiple SQL modes"
-            />
-            {skillsPreview && <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />}
-          </>
-        )}
-
-        {skillsPreview && (
-          <StatBlock
-            icon={<CodeIcon sx={{ fontSize: 20, color: accentColor }} />}
-            label="Key Skills"
-            sub={skillsPreview}
-          />
-        )}
-
-        <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
-          onClick={() => navigate(`${basePath}/${item.id}`)}
+        {/* Footer: full-width action so every card ends the same way */}
+        <Stack
+          className="dataset-cta"
+          direction="row" alignItems="center" justifyContent="center" gap={0.75}
           sx={{
-            ml: 'auto',
-            flexShrink: 0,
-            px: 3,
-            bgcolor: accentColor,
-            '&:hover': { bgcolor: alpha(accentColor, 0.85) },
+            mt: 0.5, py: 1, borderRadius: 2,
+            fontWeight: 700, fontSize: '0.9375rem',
+            color: ctaColor, bgcolor: alpha(accentColor, isDark ? 0.16 : 0.07),
+            border: '1px solid', borderColor: alpha(accentColor, isDark ? 0.4 : 0.2),
+            transition: 'background-color .2s, color .2s, border-color .2s',
+            '& svg': { transition: 'transform .2s' },
           }}
         >
-          {ctaLabel}
-        </Button>
+          {ctaLabel} <ArrowForwardIcon sx={{ fontSize: 18 }} />
+        </Stack>
       </Box>
     </Card>
   );
 }
 
-// ─── Skeleton card ───────────────────────────────────────────────────────────
-
 function DatasetCardSkeleton() {
   return (
-    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex' }}>
-        <Skeleton variant="rectangular" width={190} height={195} sx={{ flexShrink: 0 }} />
-        <Box sx={{ flex: 1, px: 3, pt: 2.5, pb: 2.5 }}>
-          <Skeleton variant="text" width="10%" height={12} sx={{ mb: 0.5 }} />
-          <Skeleton variant="text" width="52%" height={34} sx={{ mb: 1.25 }} />
-          <Skeleton variant="text" width="36%" height={16} sx={{ mb: 1.5 }} />
-          <Skeleton variant="text" width="100%" height={14} />
-          <Skeleton variant="text" width="78%" height={14} sx={{ mb: 2 }} />
-          <Stack direction="row" gap={0.75}>
-            <Skeleton variant="rounded" width={85} height={24} />
-            <Skeleton variant="rounded" width={65} height={24} />
-            <Skeleton variant="rounded" width={95} height={24} />
-          </Stack>
+    <Card sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Skeleton variant="rectangular" height={148} />
+      <Box sx={{ p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box>
+          <Skeleton variant="text" width="55%" height={30} />
+          <Skeleton variant="text" width="40%" />
         </Box>
-      </Box>
-      <Divider />
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.25 }}>
-        <Box sx={{ px: 2 }}><Skeleton variant="rounded" width={90} height={38} /></Box>
-        <Box sx={{ px: 2 }}><Skeleton variant="rounded" width={110} height={38} /></Box>
-        <Box sx={{ px: 2 }}><Skeleton variant="rounded" width={120} height={38} /></Box>
-        <Box sx={{ px: 2 }}><Skeleton variant="rounded" width={90} height={38} /></Box>
-        <Box sx={{ ml: 'auto', px: 2 }}><Skeleton variant="rounded" width={148} height={40} /></Box>
+        <Box>
+          <Skeleton variant="text" />
+          <Skeleton variant="text" width="80%" />
+        </Box>
+        <Stack direction="row" gap={0.75}>
+          {[64, 80, 96].map((w) => <Skeleton key={w} variant="rounded" width={w} height={24} />)}
+        </Stack>
+        <Skeleton variant="rounded" height={40} sx={{ mt: 1 }} />
       </Box>
     </Card>
   );
@@ -353,157 +302,158 @@ export default function DatasetGrid({
   features = [],
   pageKey,
   cardLabel = 'Dataset',
-  ctaLabel = 'Start Learning',
-  searchPlaceholder = 'Search datasets...',
+  ctaLabel = 'Open dataset',
+  searchPlaceholder = 'Search datasets',
   itemsPerPage = 6,
 }) {
   const theme = useTheme();
+  // Module accent falls back to the brand colour. The hero is always dark, so it uses the dark-mode tone.
+  const accent     = accentColor || theme.palette.primary.main;
+  const heroAccent = accentColor ? lighten(accentColor, 0.35) : '#F2546B';
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [items,            setItems]            = useState([]);
   const [totalItems,       setTotalItems]       = useState(0);
-  const [loading,          setLoading]          = useState(true);
-  const [levelFilter,      setLevelFilter]      = useState('All Levels');
+  const [level,            setLevel]            = useState(ALL);
   const [difficultyLevels, setDifficultyLevels] = useState(DEFAULT_DIFFICULTY_LEVELS);
-  const [difficultyColor,  setDifficultyColor]  = useState(DEFAULT_DIFFICULTY_COLOR);
   const [heroImage,        setHeroImage]        = useState(null);
-  const pageFromUrl   = Number(searchParams.get('page')) || 1;
-  const [currentPage, setCurrentPage] = useState(pageFromUrl);
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
-  const search = searchParams.get('search') || '';
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const search      = searchParams.get('search') || '';
+  const [searchInput, setSearchInput] = useState(search);
+  const listTopRef = useRef(null);
+  // "Loading" is derived: we're loading until the results for the current page+search have arrived
+  const queryKey = `${currentPage}|${search}`;
+  const [loadedKey, setLoadedKey] = useState(null);
+  const loading = loadedKey !== queryKey;
 
   useEffect(() => {
     fetchDatasetGridConfig().then((res) => {
-      if (res.success) {
-        if (res.data.difficultyLevels) setDifficultyLevels(['All Levels', ...res.data.difficultyLevels]);
-        if (res.data.difficultyColor)  setDifficultyColor(res.data.difficultyColor);
-      }
+      if (res.success && Array.isArray(res.data?.difficultyLevels)) setDifficultyLevels(res.data.difficultyLevels);
     });
   }, []);
 
   useEffect(() => {
     if (!pageKey) return;
     fetchPageConfig(pageKey).then((res) => {
-      if (res.success && res.data.heroImageUrl) setHeroImage(res.data.heroImageUrl);
+      if (res.success && res.data?.heroImageUrl) setHeroImage(res.data.heroImageUrl);
     });
   }, [pageKey]);
 
   useEffect(() => {
-    setLoading(true);
+    let alive = true;
     fetchFn({ page: currentPage - 1, size: itemsPerPage, search }).then((res) => {
+      if (!alive) return;
       if (res.success) {
-        setItems(res.data.items || []);
-        setTotalItems(res.data.totalElements || 0);
+        setItems(res.data?.items || []);
+        setTotalItems(res.data?.totalElements || 0);
       }
-      setLoading(false);
+      setLoadedKey(`${currentPage}|${search}`);
     });
-  }, [currentPage, search, fetchFn]);
+    return () => { alive = false; };
+  }, [currentPage, search, fetchFn, itemsPerPage]);
+
+  // Apply the search as the user types (debounced), resetting to page 1
+  useEffect(() => {
+    if (searchInput === search) return undefined;
+    const t = setTimeout(() => {
+      const next = {};
+      if (searchInput.trim()) next.search = searchInput.trim();
+      setSearchParams(next, { replace: true });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchInput, search, setSearchParams]);
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const handlePageChange = (_, page) => {
-    setCurrentPage(page);
-    setSearchParams({ page, search });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const next = { page };
+    if (search) next.search = search;
+    setSearchParams(next);
+    listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      setCurrentPage(1);
-      setSearchParams({ page: 1, search: searchInput });
-    }
-  };
-
-  const visibleItems = levelFilter === 'All Levels'
+  const visibleItems = level === ALL
     ? items
-    : items.filter((i) => i.difficulty?.toLowerCase() === levelFilter.toLowerCase());
+    : items.filter((i) => String(i.difficulty || '').toLowerCase() === level.toLowerCase());
+
+  const clearFilters = () => { setLevel(ALL); setSearchInput(''); setSearchParams({}); };
+  const noun   = cardLabel.toLowerCase();
+  const nouns  = /(x|s|ch|sh)$/.test(noun) ? `${noun}es` : `${noun}s`;
 
   return (
     <Box sx={{ minHeight: '100%' }}>
 
-      {/* ── Hero Banner ─────────────────────────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <Box
+        component="section"
         sx={{
-          position: 'relative',
-          bgcolor: theme.palette.mode === 'dark' ? '#0d1117' : '#0f172a',
-          color: '#fff',
-          overflow: 'hidden',
-          py: { xs: 5, md: 7 },
-          px: { xs: 3, sm: 4 },
+          position: 'relative', overflow: 'hidden',
+          bgcolor: HERO.bg, color: HERO.text,
+          borderBottom: '1px solid', borderColor: 'divider',
+          py: { xs: 4.5, md: 6 }, px: { xs: 2, sm: 3 },
         }}
       >
-        {/* Subtle accent glow behind content */}
         <Box
+          aria-hidden
           sx={{
-            position: 'absolute', top: -80, right: -80,
-            width: 400, height: 400, borderRadius: '50%',
-            bgcolor: alpha(accentColor, 0.08),
-            filter: 'blur(80px)',
-            pointerEvents: 'none',
+            position: 'absolute', top: -140, right: -80, width: 520, height: 520, borderRadius: '50%',
+            bgcolor: alpha(heroAccent, 0.22), filter: 'blur(110px)', pointerEvents: 'none',
+          }}
+        />
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.6,
+            backgroundImage: `linear-gradient(${HERO.faint} 1px, transparent 1px), linear-gradient(90deg, ${HERO.faint} 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            maskImage: 'linear-gradient(90deg, transparent 0%, #000 70%)',
+            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 70%)',
           }}
         />
 
-        <Container maxWidth="xl">
-          <Stack direction={{ xs: 'column', md: 'row' }} alignItems="center" gap={4}>
-
-            {/* Left: text */}
-            <Box flex={1} position="relative">
-
-              {/* Badge pill */}
+        <Container maxWidth="lg" sx={{ position: 'relative', px: { xs: 0, sm: 2 } }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} gap={4}>
+            <Box flex={1} minWidth={0}>
               {badge && (
                 <Box
                   sx={{
                     display: 'inline-flex', alignItems: 'center', gap: 1,
-                    border: '1px solid', borderColor: alpha(accentColor, 0.5),
-                    bgcolor: alpha(accentColor, 0.1),
-                    borderRadius: 10, px: 2, py: 0.5, mb: 2.5,
+                    border: '1px solid', borderColor: alpha(heroAccent, 0.45), bgcolor: alpha(heroAccent, 0.12),
+                    borderRadius: 999, px: 1.5, py: 0.5, mb: 2,
                   }}
                 >
-                  <DatabaseIcon sx={{ fontSize: 14, color: accentColor }} />
-                  <Typography variant="caption" fontWeight={700} sx={{ color: accentColor, letterSpacing: 1.5 }}>
+                  <DatabaseIcon sx={{ fontSize: 16, color: heroAccent }} />
+                  <Typography component="span" sx={{ fontSize: '0.8125rem', fontWeight: 700, color: heroAccent, letterSpacing: '0.06em' }}>
                     {badge}
                   </Typography>
                 </Box>
               )}
 
-              {/* Heading */}
-              <Typography variant="h3" fontWeight={800} lineHeight={1.15} mb={1.5}>
+              <Typography
+                variant="h1"
+                component="h1"
+                sx={{ fontSize: { xs: '2rem', md: '2.75rem' }, lineHeight: 1.1, color: HERO.text, textWrap: 'balance' }}
+              >
                 {title}{' '}
-                {titleHighlight && (
-                  <Box component="span" sx={{ color: accentColor }}>
-                    {titleHighlight}
-                  </Box>
-                )}
+                {titleHighlight && <Box component="span" sx={{ color: heroAccent }}>{titleHighlight}</Box>}
               </Typography>
 
-              {/* Subtitle */}
               {subtitle && (
-                <Typography variant="body1" sx={{ color: alpha('#fff', 0.65), mb: 3.5 }}>
+                <Typography sx={{ color: HERO.muted, mt: 1.5, fontSize: { xs: '1rem', md: '1.0625rem' }, lineHeight: 1.65, maxWidth: 600 }}>
                   {subtitle}
                 </Typography>
               )}
 
-              {/* Feature points */}
               {features.length > 0 && (
-                <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} flexWrap="wrap">
-                  {features.map((f, i) => (
-                    <Stack key={i} direction="row" alignItems="flex-start" gap={1.5}>
-                      <Box
-                        sx={{
-                          p: 0.9, borderRadius: '50%',
-                          bgcolor: alpha('#fff', 0.08),
-                          display: 'flex', flexShrink: 0,
-                        }}
-                      >
+                <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ mt: 3, columnGap: 3.5, rowGap: 2 }}>
+                  {features.map((f) => (
+                    <Stack key={f.label} direction="row" alignItems="center" gap={1.25}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 2, display: 'grid', placeItems: 'center', bgcolor: HERO.faint, border: `1px solid ${HERO.line}`, flexShrink: 0 }}>
                         {f.icon}
                       </Box>
                       <Box>
-                        <Typography variant="body2" fontWeight={700} color="#fff">
-                          {f.label}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: alpha('#fff', 0.5) }}>
-                          {f.description}
-                        </Typography>
+                        <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, color: HERO.text, lineHeight: 1.3 }}>{f.label}</Typography>
+                        <Typography sx={{ fontSize: '0.8125rem', color: HERO.muted }}>{f.description}</Typography>
                       </Box>
                     </Stack>
                   ))}
@@ -511,128 +461,106 @@ export default function DatasetGrid({
               )}
             </Box>
 
-            {/* Right: hero image */}
-            <Box
-              sx={{
-                flexShrink: 0,
-                width: { xs: '100%', md: 400 },
-                height: { xs: 160, md: 230 },
-                borderRadius: 3,
-                overflow: 'hidden',
-                border: '1px dashed',
-                borderColor: alpha(accentColor, 0.25),
-                bgcolor: alpha(accentColor, 0.05),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              {heroImage
-                ? <Box component="img" src={heroImage} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <Typography variant="caption" sx={{ color: alpha('#fff', 0.25) }}>Hero image</Typography>
-              }
-            </Box>
-
+            {heroImage && (
+              <Box
+                sx={{
+                  display: { xs: 'none', md: 'block' }, flexShrink: 0, width: 380, height: 220,
+                  borderRadius: 3, overflow: 'hidden', border: `1px solid ${HERO.line}`,
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
+                }}
+              >
+                <Box component="img" src={heroImage} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              </Box>
+            )}
           </Stack>
         </Container>
       </Box>
 
       {/* ── Dataset list ─────────────────────────────────────────────────── */}
-      <Box sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 0, sm: 2 } }}>
+      <Box ref={listTopRef} sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 }, scrollMarginTop: 64 }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 0, sm: 2 } }}>
 
-          {/* Section header + controls */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'flex-start', sm: 'center' }}
-            justifyContent="space-between"
-            gap={2}
-            mb={3}
-          >
-            <Typography variant="h5" fontWeight={700}>
-              Available Datasets
-            </Typography>
+          {/* Header + controls */}
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'flex-end' }} justifyContent="space-between" gap={2} mb={3}>
+            <Box>
+              <Typography variant="h2" component="h2" sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                {search ? `Results for “${search}”` : `All ${nouns}`}
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: '0.9375rem', color: 'text.secondary' }}>
+                {loading ? 'Loading…' : `${totalItems} ${totalItems === 1 ? noun : nouns}${search ? ' found' : ' to explore'}`}
+              </Typography>
+            </Box>
 
-            <Stack direction="row" gap={1.5} flexWrap="wrap">
-              <TextField
-                size="small"
-                placeholder={searchPlaceholder}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
+            <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} alignItems={{ sm: 'center' }}>
+              <ToggleButtonGroup
+                exclusive size="small" value={level}
+                onChange={(_, v) => v && setLevel(v)}
+                aria-label="Filter by difficulty"
+                sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' }, flexWrap: 'wrap' }}
+              >
+                <ToggleButton value={ALL} sx={{ px: 1.5, fontSize: '0.875rem' }}>All</ToggleButton>
+                {difficultyLevels.map((l) => (
+                  <ToggleButton key={l} value={l} sx={{ px: 1.5, fontSize: '0.875rem', textTransform: 'capitalize' }}>{l}</ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+
+              <Box
+                component="label"
                 sx={{
-                  width: 240,
-                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: accentColor,
-                  },
-                }}
-              />
-              <Select
-                size="small"
-                value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value)}
-                sx={{
-                  minWidth: 130,
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: accentColor },
+                  display: 'flex', alignItems: 'center', gap: 1, pl: 1.5, pr: 0.5, height: 40,
+                  width: { xs: '100%', sm: 280 },
+                  border: '1px solid', borderColor: 'border', borderRadius: 2, bgcolor: 'background.paper',
+                  transition: 'border-color .15s, box-shadow .15s',
+                  '&:focus-within': { borderColor: 'primary.main', boxShadow: theme.customShadows.primary },
                 }}
               >
-                {difficultyLevels.map((l) => (
-                  <MenuItem key={l} value={l}>{l}</MenuItem>
-                ))}
-              </Select>
+                <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                <InputBase
+                  placeholder={searchPlaceholder}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  inputProps={{ 'aria-label': searchPlaceholder }}
+                  sx={{ flex: 1, fontSize: '0.9375rem' }}
+                />
+                {searchInput && (
+                  <IconButton size="small" aria-label="Clear search" onClick={() => setSearchInput('')}>
+                    <ClearIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                )}
+              </Box>
             </Stack>
           </Stack>
 
           {/* Cards */}
-          <Stack gap={2} mb={4}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 2.5, mb: 4 }}>
             {loading
-              ? Array.from({ length: itemsPerPage }).map((_, i) => <DatasetCardSkeleton key={i} />)
+              ? Array.from({ length: Math.min(itemsPerPage, 4) }).map((_, i) => <DatasetCardSkeleton key={i} />)
               : visibleItems.map((item) => (
-                  <DatasetCard
-                    key={item.id}
-                    item={item}
-                    basePath={basePath}
-                    ctaLabel={ctaLabel}
-                    cardLabel={cardLabel}
-                    accentColor={accentColor}
-                    difficultyColor={difficultyColor}
-                  />
-                ))
-            }
-          </Stack>
+                  <DatasetCard key={item.id} item={item} basePath={basePath} ctaLabel={ctaLabel} accentColor={accent} />
+                ))}
+          </Box>
+
+          {/* Empty state */}
+          {!loading && visibleItems.length === 0 && (
+            <Stack alignItems="center" textAlign="center" gap={1.25} sx={{ py: 8, px: 2, border: '1px dashed', borderColor: 'border', borderRadius: 3, mb: 4 }}>
+              <SearchOffIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
+              <Typography variant="h4" component="p">No {nouns} match</Typography>
+              <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary', maxWidth: 420 }}>
+                {items.length > 0
+                  ? `None of the ${nouns} on this page have that difficulty. Try another level or clear the filters.`
+                  : 'Try a different search term, or clear the filters to see everything.'}
+              </Typography>
+              <Button variant="outlined" color="inherit" onClick={clearFilters} sx={{ mt: 1 }}>Clear filters</Button>
+            </Stack>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <Stack alignItems="center" spacing={1}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {(currentPage - 1) * itemsPerPage + 1}–
-                {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+            <Stack alignItems="center" spacing={1.25}>
+              <MuiPagination count={totalPages} page={currentPage} onChange={handlePageChange} variant="outlined" shape="rounded" />
+              <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
               </Typography>
-              <MuiPagination
-                count={totalPages}
-                page={currentPage}
-                onChange={handlePageChange}
-                variant="outlined"
-                shape="rounded"
-                sx={{
-                  '& .MuiPaginationItem-root': {
-                    color: accentColor,
-                    borderColor: alpha(accentColor, 0.4),
-                    '&.Mui-selected': {
-                      bgcolor: accentColor,
-                      color: '#fff',
-                      borderColor: accentColor,
-                      '&:hover': { bgcolor: alpha(accentColor, 0.85) },
-                    },
-                    '&:hover': { bgcolor: alpha(accentColor, 0.08) },
-                  },
-                }}
-              />
             </Stack>
           )}
 

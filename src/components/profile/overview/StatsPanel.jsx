@@ -12,7 +12,7 @@ const CARDS = [
     key:     'totalSubmissions',
     label:   'Total Submissions',
     Icon:    StorageIcon,
-    color:   '#22c55e',
+    tone:    'primary',
   },
   {
     key:     'correctSubmissions',
@@ -20,7 +20,7 @@ const CARDS = [
     subKey:  'correctPct',
     subSuffix: '%',
     Icon:    CheckCircleIcon,
-    color:   '#3b82f6',
+    tone:    'success',
   },
   {
     key:     'wrongSubmissions',
@@ -28,7 +28,7 @@ const CARDS = [
     subKey:  'wrongPct',
     subSuffix: '%',
     Icon:    CancelIcon,
-    color:   '#ef4444',
+    tone:    'error',
   },
   {
     key:     'avgTime',
@@ -36,13 +36,14 @@ const CARDS = [
     subKey:  'avgTimePct',
     subFmt:  (v) => `Faster than ${v}% of users`,
     Icon:    TimerIcon,
-    color:   '#a855f7',
+    tone:    'info',
   },
 ];
 
 function StatCard({ cfg, stats, loading }) {
   const theme = useTheme();
-  const { key, label, subKey, subSuffix, subFmt, Icon, color } = cfg;
+  const { key, label, subKey, subSuffix, subFmt, Icon, tone } = cfg;
+  const color = theme.palette[tone].main;
   const value = stats?.[key];
   const subRaw = stats?.[subKey];
   const subLabel = subRaw != null
@@ -60,8 +61,8 @@ function StatCard({ cfg, stats, loading }) {
         p: 1.5,
         borderRadius: 2,
         border: '1px solid',
-        borderColor: alpha(color, 0.3),
-        bgcolor: alpha(color, theme.palette.mode === 'dark' ? 0.18 : 0.1),
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
@@ -71,8 +72,8 @@ function StatCard({ cfg, stats, loading }) {
         sx={{
           width: 40,
           height: 40,
-          borderRadius: '50%',
-          bgcolor: alpha(color, 0.2),
+          borderRadius: 2,
+          bgcolor: alpha(color, theme.palette.mode === 'dark' ? 0.16 : 0.1),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -82,7 +83,7 @@ function StatCard({ cfg, stats, loading }) {
         <Icon sx={{ fontSize: 20, color }} />
       </Box>
       <Box>
-        <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+        <Typography variant="h4" component="p" sx={{ lineHeight: 1.2, fontVariantNumeric: 'tabular-nums' }}>
           {value ?? '—'}
         </Typography>
         <Typography variant="caption" color="text.secondary">{label}</Typography>

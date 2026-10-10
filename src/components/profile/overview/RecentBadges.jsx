@@ -18,7 +18,7 @@ function HexBadge({ color, icon, size = 56 }) {
         boxShadow: `0 0 12px ${alpha(color, 0.5)}`,
       }}
     >
-      <Box sx={{ color: '#fff', fontSize: size * 0.45, display: 'flex' }}>
+      <Box sx={{ color: '#FFFFFF', fontSize: size * 0.45, display: 'flex' }}>
         {icon}
       </Box>
     </Box>
@@ -64,7 +64,7 @@ export default function RecentBadges({ badges, loading }) {
               sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}
             >
               <HexBadge
-                color={badge.color ?? '#f59e0b'}
+                color={badge.color ?? '#C8203A'}
                 icon={
                   <MilitaryTechIcon sx={{ fontSize: '1em' }} />
                 }
