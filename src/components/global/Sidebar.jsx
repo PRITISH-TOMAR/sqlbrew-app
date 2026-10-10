@@ -48,11 +48,12 @@ function NavItem({ item, drawerOpen }) {
   const { close }    = useSidebar();
   const isLg = useMediaQuery(theme.breakpoints.up('lg'));
 
-  const [expanded, setExpanded] = useState(false);
   const hasChildren = !!item.children?.length;
+  const childActive = hasChildren && item.children.some((c) => !c.locked && pathname.startsWith(c.path));
+  const [expanded, setExpanded] = useState(childActive || item.defaultExpanded || false);
 
   const isSelected = hasChildren
-    ? item.children.some((c) => pathname.startsWith(c.path))
+    ? childActive
     : item.path === '/'
       ? pathname === '/'
       : pathname.startsWith(item.path) || (pathname.startsWith('/master') && item.label === 'Profile');
@@ -66,26 +67,36 @@ function NavItem({ item, drawerOpen }) {
     }
   };
 
+  const accent = theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main';
+
   const button = (
     <ListItemButton
       selected={isSelected && !hasChildren}
       onClick={handleClick}
+      aria-expanded={hasChildren ? expanded : undefined}
       sx={{
-        minHeight: 56,
-        px: drawerOpen ? 3 : 1.5,
-        py: 1,
-        gap: 0.5,
-        mx: 0.5,
-        borderRadius: 1,
+        position: 'relative',
+        minHeight: 40,
+        px: drawerOpen ? 1.5 : 0,
+        py: 0.75,
+        gap: 1.25,
+        mx: 1,
+        mb: 0.25,
         justifyContent: drawerOpen ? 'initial' : 'center',
+        color: isSelected ? accent : 'text.secondary',
+        '&:hover': { color: 'text.primary' },
+        '&.Mui-selected::before': {
+          content: '""', position: 'absolute', left: -8, top: 8, bottom: 8,
+          width: 3, borderRadius: '0 3px 3px 0', bgcolor: 'primary.main',
+        },
       }}
     >
       <ListItemIcon
         sx={{
-          minWidth: 32,
+          minWidth: 0,
           justifyContent: 'center',
-          fontSize: 20,
-          color: isSelected ? 'primary.main' : 'text.primary',
+          color: 'inherit',
+          '& svg': { fontSize: 20 },
         }}
       >
         {item.icon}
@@ -96,15 +107,14 @@ function NavItem({ item, drawerOpen }) {
           <ListItemText
             primary={item.label}
             primaryTypographyProps={{
-              variant: 'h6',
               noWrap: true,
-              sx: { color: isSelected ? 'primary.main' : 'text.primary' },
+              sx: { fontSize: '0.875rem', fontWeight: isSelected ? 700 : 500, color: 'inherit' },
             }}
           />
           {hasChildren && (
             expanded
-              ? <ExpandLess sx={{ fontSize: 18, color: 'text.secondary' }} />
-              : <ExpandMore  sx={{ fontSize: 18, color: 'text.secondary' }} />
+              ? <ExpandLess sx={{ fontSize: 18, color: 'text.disabled' }} />
+              : <ExpandMore  sx={{ fontSize: 18, color: 'text.disabled' }} />
           )}
         </>
       )}
@@ -119,7 +129,7 @@ function NavItem({ item, drawerOpen }) {
 
       {hasChildren && drawerOpen && (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <List disablePadding>
+          <List disablePadding sx={{ position: 'relative', '&::before': { content: '""', position: 'absolute', left: 29.5, top: 2, bottom: 6, width: '1px', bgcolor: 'divider' } }}>
             {item.children.map((child) => {
               const childSelected = !child.locked && (child.path === '/'
                 ? pathname === '/'
@@ -134,14 +144,19 @@ function NavItem({ item, drawerOpen }) {
                     navigate(child.path);
                     if (!isLg) close();
                   }}
-                  sx={{ minHeight: 44, pl: 6, pr: 3, py: 0.75, borderRadius: 1, mx: 0.5 }}
+                  sx={{
+                    minHeight: 34, pl: 2, pr: 1.5, py: 0.5, mr: 1, ml: 4.5, mb: 0.25,
+                    color: childSelected ? accent : 'text.secondary',
+                    '&:hover': { color: 'text.primary' },
+                    '&.Mui-disabled': { opacity: 0.55 },
+                  }}
                 >
-                  <ListItemIcon sx={{ minWidth: 28, fontSize: 16, color: childSelected ? 'primary.main' : 'inherit' }}>
+                  <ListItemIcon sx={{ minWidth: 26, color: 'inherit', '& svg': { fontSize: 17 } }}>
                     {child.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={child.label}
-                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                    primaryTypographyProps={{ noWrap: true, sx: { fontSize: '0.8125rem', fontWeight: childSelected ? 700 : 500, color: 'inherit' } }}
                   />
                 </ListItemButton>
               );
@@ -165,7 +180,7 @@ function DrawerContent({ open }) {
     return {
       ...m,
       locked: !enabled,
-      icon: enabled ? m.icon : <LockIcon sx={{ fontSize: 18 }} />,
+      icon: enabled ? m.icon : <LockIcon />,
     };
   });
 
@@ -175,6 +190,7 @@ function DrawerContent({ open }) {
       icon: <DashboardIcon />,
       path: '/',
       children: dashboardChildren,
+      defaultExpanded: true,
     },
     ...STATIC_NAV_ITEMS,
     ...(isAdmin ? [{ label: 'Admin Portal', icon: <AdminIcon />, path: '/admin' }] : []),
@@ -182,7 +198,7 @@ function DrawerContent({ open }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 2 }}>
-      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mt: 0.5 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', pt: 1.5 }}>
         <List disablePadding>
           {navItems.map((item) => (
             <NavItem key={item.label} item={item} drawerOpen={open} />
@@ -203,10 +219,8 @@ export default function Sidebar() {
     width: open ? DRAWER_WIDTH : ICON_DRAWER_WIDTH,
     overflowX: 'hidden',
     border: 'none',
-    borderRight: open ? `1px solid ${theme.palette.divider}` : 'none',
-    boxShadow: open
-      ? 'none'
-      : '2px 0 8px rgba(0,0,0,0.06)',
+    borderRight: `1px solid ${theme.palette.divider}`,
+    boxShadow: 'none',
     top: APP_BAR_HEIGHT,
     height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
     transition: theme.transitions.create('width', {
