@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Stack, Typography, Chip, useTheme } from '@mui/material';
+import { Box, Stack, Typography, Chip, useTheme, alpha } from '@mui/material';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
 import GridOnRoundedIcon from '@mui/icons-material/GridOnRounded';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -69,7 +69,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
     whiteSpace: 'nowrap',
     textAlign: 'left',
     borderBottom: `1px solid ${theme.palette.divider}`,
-    backgroundColor: theme.palette.action.hover,
+    backgroundColor: theme.palette.background.subtle,
     color: theme.palette.text.secondary,
     letterSpacing: 0.4,
   };
@@ -78,7 +78,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
     padding: '5px 10px',
     whiteSpace: 'nowrap',
     fontSize: '0.78rem',
-    fontFamily: 'monospace',
+    fontFamily: theme.typography.fontFamilyMono,
     borderBottom: `1px solid ${theme.palette.divider}`,
   };
 
@@ -92,7 +92,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 1.5,
+        borderRadius: 2,
         overflow: 'hidden',
       }}
     >
@@ -104,7 +104,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
         sx={{
           px: 2,
           py: 1,
-          bgcolor: 'action.hover',
+          bgcolor: 'background.subtle',
           borderBottom: '1px solid',
           borderColor: 'divider',
           flexShrink: 0,
@@ -153,7 +153,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
                     key={ri}
                     style={{
                       backgroundColor: mismatch
-                        ? 'rgba(239, 68, 68, 0.09)'
+                        ? alpha(theme.palette.error.main, 0.08)
                         : 'transparent',
                     }}
                   >
@@ -169,7 +169,7 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
                         style={{
                           ...TD,
                           color: mismatch
-                            ? 'rgba(248, 113, 113, 0.9)'
+                            ? theme.palette.error.main
                             : theme.palette.text.primary,
                         }}
                       >
@@ -181,12 +181,12 @@ function OutputPanel({ title, icon, columns, rows, indicators }) {
                     {hasIndicators && (
                       <td style={{ ...TD, textAlign: 'right', paddingRight: 14 }}>
                         {match && (
-                          <span style={{ color: '#4ade80', fontSize: '0.72rem', fontWeight: 600 }}>
+                          <span style={{ color: theme.palette.success.main, fontSize: '0.72rem', fontWeight: 600, fontFamily: theme.typography.fontFamily }}>
                             ✓ Match
                           </span>
                         )}
                         {mismatch && (
-                          <span style={{ color: '#f87171', fontSize: '0.71rem' }}>
+                          <span style={{ color: theme.palette.error.main, fontSize: '0.72rem', fontWeight: 600, fontFamily: theme.typography.fontFamily }}>
                             {ind.label}
                           </span>
                         )}
@@ -215,13 +215,13 @@ function SingleTestComparison({ tc }) {
           mt: 1, p: 1.5,
           bgcolor: 'error.lighter',
           border: '1px solid',
-          borderColor: 'error.light',
-          borderRadius: 1,
+          borderColor: (t) => alpha(t.palette.error.main, 0.35),
+          borderRadius: 2,
         }}
       >
         <Typography
           variant="caption"
-          sx={{ fontFamily: 'monospace', color: 'error.main', whiteSpace: 'pre-wrap', display: 'block' }}
+          sx={{ fontFamily: theme.typography.fontFamilyMono, color: 'error.main', whiteSpace: 'pre-wrap', display: 'block' }}
         >
           {tc.error}
         </Typography>
@@ -282,7 +282,12 @@ export default function SQLTestComparison({ testDetails }) {
               onClick={() => setActive(i)}
               color={t.passed ? 'success' : 'error'}
               variant={active === i ? 'filled' : 'outlined'}
-              sx={{ fontWeight: 600, fontSize: '0.69rem', cursor: 'pointer' }}
+              icon={t.passed ? <CheckCircleIcon /> : <CancelIcon />}
+              sx={(th) => ({
+                fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer',
+                '& .MuiChip-icon': { fontSize: 14 },
+                ...(active === i && { boxShadow: `inset 0 0 0 1.5px ${th.palette[t.passed ? 'success' : 'error'].main}` }),
+              })}
             />
           ))}
         </Stack>

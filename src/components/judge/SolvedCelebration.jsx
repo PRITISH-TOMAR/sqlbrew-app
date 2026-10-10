@@ -3,7 +3,8 @@ import { Box, Button, Stack, Typography, useTheme } from '@mui/material';
 import CheckIcon from '@mui/icons-material/CheckRounded';
 import NextIcon from '@mui/icons-material/ArrowForwardRounded';
 
-const CONFETTI_COLORS = ['#22c55e', '#f59e0b', '#3b82f6', '#ec4899', '#a855f7', '#14b8a6'];
+// Garnet-led confetti: brand reds and roses with a few gold and green flecks
+const CONFETTI_COLORS = ['#C8203A', '#F2546B', '#F5A9B3', '#F5B544', '#3DD68C', '#DC2F49'];
 const MotionDiv  = motion.div;
 const MotionSpan = motion.span;
 
@@ -75,7 +76,7 @@ export default function SolvedCelebration({ open, onClose, onNext, hasNext, firs
           style={{
             position: 'absolute', inset: 0, zIndex: 50,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)',
+            background: theme.palette.mode === 'dark' ? 'rgba(18,16,18,0.6)' : 'rgba(250,248,247,0.65)',
             backdropFilter: 'blur(2px)',
             overflow: 'hidden',
           }}
@@ -92,9 +93,9 @@ export default function SolvedCelebration({ open, onClose, onNext, hasNext, firs
             <Box
               sx={{
                 px: 4, py: 3.5, minWidth: 280, textAlign: 'center',
-                bgcolor: 'background.paper', borderRadius: 3,
-                border: '1px solid', borderColor: 'success.main',
-                boxShadow: theme.shadows[12],
+                bgcolor: 'background.paper', borderRadius: 4,
+                border: '1px solid', borderColor: 'divider',
+                boxShadow: theme.customShadows.dialog,
               }}
             >
               <MotionDiv
@@ -106,7 +107,7 @@ export default function SolvedCelebration({ open, onClose, onNext, hasNext, firs
                 <Box
                   sx={{
                     width: 64, height: 64, borderRadius: '50%',
-                    bgcolor: 'success.main', color: 'common.white',
+                    bgcolor: 'success.main', color: 'success.contrastText',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: `0 0 0 8px ${theme.palette.success.main}33`,
                   }}
