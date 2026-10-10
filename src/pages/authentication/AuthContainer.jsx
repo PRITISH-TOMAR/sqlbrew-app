@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { Box, Paper, Stack, Typography, useTheme } from '@mui/material';
 import Login  from '../../components/auth/Login.jsx';
 import Signup from '../../components/auth/Signup.jsx';
-import LogoImage from '../../components/global/LogoImage.jsx';
 import singupDark  from '../../assets/images/signup-dark.jpg';
 import signupLight from '../../assets/images/signup-light.jpg';
 import { APP_BAR_HEIGHT } from '../../config/layout.js';
@@ -39,10 +38,6 @@ export default function AuthContainer() {
           p: { xs: 3, sm: 6 },
         }}
       >
-        <Box sx={{ width: '100%', maxWidth: 440 }}>
-          <LogoImage />
-        </Box>
-
         <Paper
           elevation={0}
           sx={{
@@ -51,8 +46,8 @@ export default function AuthContainer() {
             p: { xs: 3, sm: 4 },
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 3,
-            boxShadow: theme.shadows[1],
+            borderRadius: 4,
+            boxShadow: theme.customShadows.raised,
           }}
         >
           {isLogin
@@ -88,7 +83,7 @@ export default function AuthContainer() {
             sx={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)',
+              background: 'linear-gradient(180deg, rgba(110,15,30,0.15) 0%, rgba(18,16,18,0.2) 40%, rgba(18,16,18,0.85) 100%)',
             }}
           />
           <Stack
@@ -99,13 +94,14 @@ export default function AuthContainer() {
               right: 0,
               bottom: 0,
               p: 4,
-              color: '#fff',
+              color: '#FFFFFF',
             }}
           >
-            <Typography variant="h4" fontWeight={600}>
+            <Box sx={{ width: 40, height: 3, borderRadius: 2, bgcolor: '#F2546B', mb: 1 }} />
+            <Typography variant="h2" sx={{ color: '#FFFFFF', textWrap: 'balance', maxWidth: 460 }}>
               Master SQL, one query at a time
             </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 420 }}>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)', maxWidth: 420, fontSize: '0.9375rem' }}>
               Practice real-world database problems, get instant feedback, and
               build the querying skills that employers look for.
             </Typography>

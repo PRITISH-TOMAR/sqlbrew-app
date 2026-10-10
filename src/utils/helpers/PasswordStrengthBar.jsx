@@ -1,52 +1,42 @@
 import { passwordStrength } from "check-password-strength";
+import { Box, Stack, Typography, useTheme } from "@mui/material";
 
-// FUNCTION: STRENGTH COLOR FOR PASSWORD
-const getStrengthColor = (strength) => {
-  switch (strength.id) {
-    case 0:
-      return { color: "#ef4444", label: strength.value, width: "25%" };
-    case 1:
-      return { color: "#f97316", label: strength.value, width: "50%" };
-    case 2:
-      return { color: "#eab308", label: strength.value, width: "75%" };
+// Four segments that fill as the password gets stronger, coloured from the theme
+const levelOf = (id, palette) => {
+  switch (id) {
+    case 0:  return { color: palette.error.main,   filled: 1 };
+    case 1:  return { color: palette.warning.main, filled: 2 };
+    case 2:  return { color: palette.info.main,    filled: 3 };
     case 3:
-      return { color: "#10b981", label: strength.value, width: "100%" };
-    // Some versions of check-password-strength might have only 4 levels
-    case 4:
-      return { color: "#10b981", label: strength.value, width: "100%" };
-    default:
-      return { color: "#6b7280", label: strength.value, width: "0%" };
+    case 4:  return { color: palette.success.main, filled: 4 };
+    default: return { color: palette.text.disabled, filled: 0 };
   }
 };
 
-// FUNCTION: Password Validation
-const passWordValidationStrength = (password) => {
-  const strength = passwordStrength(password);
-  return getStrengthColor(strength);
-};
-
 export const PasswordStrengthBar = ({ password }) => {
-  if (!password) return null; // Don't show bar when no password
+  const theme = useTheme();
+  if (!password) return null;
 
-  const strengthInfo = passWordValidationStrength(password);
+  const strength = passwordStrength(password);
+  const { color, filled } = levelOf(strength.id, theme.palette);
 
   return (
-    <div className="flex items-center gap-2  min-w-[90%] w-[90%]">
-      <div
-        className="text-sm  justify-self-center self-center font-medium "
-        style={{ color: strengthInfo.color }}
-      >
-        {strengthInfo.label}
-      </div>
-      <div className="strength-bar-background w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className="strength-bar-fill h-full transition-all duration-300 ease-in-out"
-          style={{
-            width: strengthInfo.width,
-            backgroundColor: strengthInfo.color,
-          }}
-        />
-      </div>
-    </div>
+    <Stack direction="row" alignItems="center" gap={1.5} sx={{ mt: 1 }} aria-live="polite">
+      <Stack direction="row" gap={0.5} sx={{ flex: 1 }}>
+        {[0, 1, 2, 3].map((i) => (
+          <Box
+            key={i}
+            sx={{
+              flex: 1, height: 4, borderRadius: 4,
+              bgcolor: i < filled ? color : "divider",
+              transition: "background-color .25s",
+            }}
+          />
+        ))}
+      </Stack>
+      <Typography variant="caption" fontWeight={700} sx={{ color, minWidth: 72, textAlign: "right" }}>
+        {strength.value}
+      </Typography>
+    </Stack>
   );
 };

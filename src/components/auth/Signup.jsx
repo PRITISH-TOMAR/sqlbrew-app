@@ -17,13 +17,18 @@ import { PasswordStrengthBar } from '../../utils/helpers/PasswordStrengthBar.jsx
 
 const validateEmail = (email) => {
   const ok = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
-  if (!ok) toast.error('INVALID EMAIL..');
+  if (!ok) toast.error('Please enter a valid email address');
   return ok;
 };
 
+const FIELD_LABELS = {
+  firstName: 'first name', lastName: 'last name', countryCode: 'country code', contact: 'phone number',
+  email: 'email', password: 'password', confirmPassword: 'password confirmation',
+};
+
 const validateForm = (formData) => {
-  const empty = Object.entries(formData).filter(([, v]) => v === null || v === undefined || v === '');
-  if (empty.length) { toast.error(`Please fill in: ${empty.map(([k]) => k).join(', ')}`); return false; }
+  const empty = Object.entries(formData).filter(([k, v]) => k in FIELD_LABELS && (v === null || v === undefined || v === ''));
+  if (empty.length) { toast.error(`Please fill in your ${empty.map(([k]) => FIELD_LABELS[k]).join(', ')}`); return false; }
   if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return false; }
   return true;
 };
@@ -65,9 +70,9 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
   return (
     <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
       <Box>
-        <Typography variant="h4" fontWeight={600}>Sign up</Typography>
+        <Typography variant="h2" component="h1">Create your account</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>
-          Create your account to get started
+          Start solving SQL challenges on real datasets
         </Typography>
       </Box>
 
@@ -79,7 +84,7 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
       </Stack>
 
       {/* Phone */}
-      <Stack direction="row" spacing={0}>
+      <Stack direction="row" spacing={1}>
         <CountryCodeDropdown
           value={formData.countryCode}
           onChange={(v) => set('countryCode', v)}
@@ -95,7 +100,6 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
             if (v.length <= 10) set('contact', v);
           }}
           required
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0 4px 4px 0' } }}
         />
       </Stack>
 
@@ -110,8 +114,8 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
             py: 1,
             border: '1px solid',
             borderColor: 'success.main',
-            borderRadius: 1,
-            bgcolor: 'rgba(46, 125, 50, 0.08)',
+            borderRadius: 2,
+            bgcolor: 'success.lighter',
           }}
         >
           <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
@@ -131,6 +135,7 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
           value={formData.email}
           onChange={(e) => set('email', e.target.value)}
           required
+          helperText="We'll email you a link to verify this address before you can sign up."
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -139,11 +144,10 @@ export default function Signup({ onSwitchToLogin, preloadedEmail = '', preloaded
                   variant="contained"
                   onClick={handleSendLink}
                   disabled={linkSending}
-                  sx={{ minWidth: 70, height: 28, fontSize: '0.75rem' }}
+                  startIcon={linkSending ? null : <MailOutlineIcon sx={{ fontSize: '16px !important' }} />}
+                  sx={{ minWidth: 76, height: 28, fontSize: '0.75rem', mr: -0.5 }}
                 >
-                  {linkSending
-                    ? <CircularProgress size={14} color="inherit" />
-                    : <MailOutlineIcon fontSize="small" />}
+                  {linkSending ? <CircularProgress size={14} color="inherit" /> : 'Verify'}
                 </Button>
               </InputAdornment>
             ),
